@@ -22,7 +22,10 @@ Task-Orchestrator is a local-first app that turns vague ideas into clear, action
 - Python 3.10+  
 - Node.js 18+  
 - [Ollama](https://ollama.com) installed locally  
-- Model pulled (for example):  
+- Server Started in one terminal and Model pulled in another (for example):  
+  ```zsh
+  ollama serve
+  ```
   ```bash
   ollama pull qwen2.5:7b
   ```
@@ -30,6 +33,9 @@ Task-Orchestrator is a local-first app that turns vague ideas into clear, action
 ### Setup
 
 ```bash
+# Install ollama
+curl -fsSL https://ollama.com/install.sh | sh
+
 # Clone repo
 git clone https://github.com/ethauber/task-orchestrator.git
 cd task-orchestrator
@@ -68,6 +74,7 @@ Built for local idea refinement and planning without relying on the cloud. Also,
 
 
 #### Collection of links
+https://docs.ollama.com/linux
 https://mermaid.js.org/intro/
 https://python-poetry.org/docs/basic-usage/
 https://fastapi.tiangolo.com/#sponsors
