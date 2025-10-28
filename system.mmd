@@ -1,19 +1,24 @@
+%%{init: {'flowchart': {'curve':'basis','nodeSpacing':40,'rankSpacing':50}}}%%
 flowchart LR
-  U["User"] --> W["Next.js\nfrontend"]
+  U["User"] --> W["Next.js
+frontend"]
 
   %% Frontend to API
-  W -->|HTTP/JSON| A["FastAPI\nbackend"]
+  W -->|HTTP/JSON| A["FastAPI
+backend"]
   A <-->|WebSocket| W
 
   %% Orchestrator / LLM
-  A --> L["LangGraph\nOrchestrator"]
-  L --> O["Ollama\n(Qwen2.5 / Mistral)"]
+  A --> L["LangGraph
+Orchestrator"]
+  L --> O["Ollama
+(Qwen2.5 / Mistral)"]
 
   %% Data
   A --> DB["SQLite"]
   DB --- A
 
   %% External services (examples)
-  A --> GH["GitHub MCP Server"]
+  A --> GH["GitHub
+MCP Server"]
   A --> MC["Mail / Mandrill"]
-
