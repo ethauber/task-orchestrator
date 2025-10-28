@@ -1,0 +1,22 @@
+[project]
+name = "task-orchestrator"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Eli H",email = "21344568+ethauber@users.noreply.github.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+dependencies = [
+    "fastapi (>=0.120.1,<0.121.0)",
+    "langchain (>=1.0.2,<2.0.0)",
+    "langchain-ollama (>=1.0.0,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
