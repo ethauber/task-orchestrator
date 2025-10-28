@@ -1,0 +1,19 @@
+flowchart LR
+  U["User"] --> W["Next.js\nfrontend"]
+
+  %% Frontend to API
+  W -->|HTTP/JSON| A["FastAPI\nbackend"]
+  A <-->|WebSocket| W
+
+  %% Orchestrator / LLM
+  A --> L["LangGraph\nOrchestrator"]
+  L --> O["Ollama\n(Qwen2.5 / Mistral)"]
+
+  %% Data
+  A --> DB["SQLite"]
+  DB --- A
+
+  %% External services (examples)
+  A --> GH["GitHub MCP Server"]
+  A --> MC["Mail / Mandrill"]
+

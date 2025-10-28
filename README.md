@@ -35,11 +35,9 @@ git clone https://github.com/ethauber/task-orchestrator.git
 cd task-orchestrator
 
 # Backend setup
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload
+poetry init
+poetry install
+poetry run python -m uvicorn main:app --reload
 
 # Frontend setup
 cd ../frontend
@@ -67,3 +65,10 @@ Then open [http://localhost:3000](http://localhost:3000) to use the app.
 ---
 
 Built for local idea refinement and planning without relying on the cloud. Also, most clouds do not do this readily currently
+
+
+#### Collection of links
+https://mermaid.js.org/intro/
+https://python-poetry.org/docs/basic-usage/
+https://fastapi.tiangolo.com/#sponsors
+https://docs.langchain.com/oss/python/langchain/overview#install
