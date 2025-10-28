@@ -74,8 +74,10 @@ Built for local idea refinement and planning without relying on the cloud. Also,
 
 
 #### Collection of links
+```
 https://docs.ollama.com/linux
 https://mermaid.js.org/intro/
 https://python-poetry.org/docs/basic-usage/
 https://fastapi.tiangolo.com/#sponsors
 https://docs.langchain.com/oss/python/langchain/overview#install
+```
