@@ -19,10 +19,12 @@ Task-Orchestrator is a local-first app that turns vague ideas into clear, action
 
 ### Prerequisites
 
-- Python 3.10+  
-- Poetry for dependency management
-- Node.js 18+  
-- [Ollama](https://ollama.com) installed locally  
+- Python 3.10+ (3.11.13)  
+- Poetry for dependency management (2.2.1)  
+- Node.js 18+ (v22.20.0)  
+- npm (10.9.3)  
+- npx (10.9.3)  
+- [Ollama](https://ollama.com) installed locally (0.12.5)  
 - Server Started in one terminal and Model pulled in another (for example):  
   ```zsh
   ollama serve
@@ -52,6 +54,9 @@ curl -fsSL https://ollama.com/install.sh | sh
 # Optional diagramming tools
 brew install graphviz
 npm install -g @mermaid-js/mermaid-cli
+
+# Creating scaffolding for Next.js (React)
+npx create-next-app@latest frontend --ts --eslint --app --src-dir --import-alias "@/*"
 ```
 
 #### Run Application

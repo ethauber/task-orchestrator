@@ -1,0 +1,27 @@
+{
+  "name": "task-orchestrator",
+  "version": "1.0.0",
+  "description": "Task-Orchestrator is a local-first app that turns vague ideas into clear, actionable plans using a FastAPI backend and a Next.js frontend. It refines goals, breaks them into tasks, and generates step-by-step strategies entirely on your machine.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "llm": "ollama serve",
+    "backend": "poetry -C backend run uvicorn main:app --reload --port 8000",
+    "frontend": "npm --prefix frontend run dev",
+    "dev": "concurrently -k -n LLM,API,WEB -c blue,green,magenta \"npm run llm\" \"npm run backend\" \"npm run frontend\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ethauber/task-orchestrator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ethauber/task-orchestrator/issues"
+  },
+  "homepage": "https://github.com/ethauber/task-orchestrator#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
