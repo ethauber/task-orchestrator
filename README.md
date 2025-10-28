@@ -20,6 +20,7 @@ Task-Orchestrator is a local-first app that turns vague ideas into clear, action
 ### Prerequisites
 
 - Python 3.10+  
+- Poetry for dependency management
 - Node.js 18+  
 - [Ollama](https://ollama.com) installed locally  
 - Server Started in one terminal and Model pulled in another (for example):  
@@ -31,11 +32,30 @@ Task-Orchestrator is a local-first app that turns vague ideas into clear, action
   ```
 
 ### Setup
-
+#### Pre-requistites (MacOS example) 
 ```bash
+# Install Homebrew
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install Python
+brew install python
+
+# Install Node.js
+brew install node
+
+# Install Poetry
+curl -sSL https://install.python-poetry.org | python3 -
+
 # Install ollama
 curl -fsSL https://ollama.com/install.sh | sh
 
+# Optional diagramming tools
+brew install graphviz
+npm install -g @mermaid-js/mermaid-cli
+```
+
+#### Run Application
+```bash
 # Clone repo
 git clone https://github.com/ethauber/task-orchestrator.git
 cd task-orchestrator
