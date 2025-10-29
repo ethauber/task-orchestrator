@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "llm": "ollama serve",
-    "backend": "poetry -C backend run uvicorn main:app --reload --port 8000",
+    "backend": "poetry run uvicorn backend.main:app --reload --port 8000",
     "frontend": "npm --prefix frontend run dev",
     "dev": "concurrently -k -n LLM,API,WEB -c blue,green,magenta \"npm run llm\" \"npm run backend\" \"npm run frontend\""
   },
