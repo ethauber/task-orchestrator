@@ -1,9 +1,12 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 import os
 
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import HttpUrl
+
+from backend.schemas import Health, PingResponse, RefineRequest, RefineResponse
+
 load_dotenv()
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -32,19 +35,12 @@ app.add_middleware(
 )
 
 
-class Health(BaseModel):
-    status: str
-    model: str
-    ollama_url: str
-
-
-class PingResponse(BaseModel):
-    response: str
-
-
 @app.get("/health", response_model=Health)
 def health():
-    return Health(status="ok", model=MODEL_NAME, ollama_url=OLLAMA_BASE_URL)
+    return Health(
+        status="ok", model=MODEL_NAME,
+        ollama_url=HttpUrl(OLLAMA_BASE_URL)
+    )
 
 
 @app.get("/llm/ping", response_model=PingResponse)
@@ -53,7 +49,20 @@ def llm_ping():
         raise HTTPException(status_code=500, detail="ollama client unavailable")
 
     try:
-        r = ollama.generate(model=MODEL_NAME, prompt="Reply with OK")
+        # Interesting if a word close in vector space like GRID
+        # is chosen then it only replies with WAFFLES qwen2.5
+        r = ollama.generate(
+            model=MODEL_NAME, prompt="Flip a coin to pick 'WAFFLES' or 'OK' then reply"
+            " with it. Only respond with the outcome"
+        )
         return PingResponse(response=r["response"].strip())
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"ollama error: {e}")
+    except Exception as general_exception:
+        raise HTTPException(status_code=502, detail=f"ollama error: {general_exception}")
+
+
+@app.post("/refine", response_model=RefineResponse)
+def refine(request: RefineRequest):
+    if ollama is None:
+        raise HTTPException(status_code=500, detail="ollama client unavailable")
+
+    return RefineResponse(refinedIdea='The meaning of life is 42 ... and waffles', questions=['q1', 'q2'])
