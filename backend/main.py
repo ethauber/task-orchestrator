@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import HttpUrl
 
 from backend.schemas import Health, PingResponse, RefineRequest, RefineResponse
+from backend.llm_refine import refine_with_lang
 
 load_dotenv()
 
@@ -65,4 +66,9 @@ def refine(request: RefineRequest):
     if ollama is None:
         raise HTTPException(status_code=500, detail="ollama client unavailable")
 
-    return RefineResponse(refinedIdea='The meaning of life is 42 ... and waffles', questions=['q1', 'q2'])
+    # return RefineResponse(refinedIdea='The meaning of life is 42 ... and waffles', questions=['q1', 'q2'])
+    try:
+        out = refine_with_lang(request)
+        return out
+    except Exception as gen_exception:
+        raise HTTPException(502, detail=f'refine failed with\n{gen_exception}')
