@@ -12,8 +12,9 @@ MODEL_NAME = os.getenv("MODEL_NAME", "qwen2.5:7b")
 # lazy-init ollama client
 try:
     from ollama import Client
-    ollama = Client(base_url=OLLAMA_BASE_URL)
-except Exception:
+    ollama = Client(host=OLLAMA_BASE_URL)
+except Exception as ollama_init_error:
+    print(f"Warning: could not initialize ollama client at {OLLAMA_BASE_URL}\n{ollama_init_error}")
     ollama = None
 
 
