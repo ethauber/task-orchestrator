@@ -80,11 +80,11 @@ Then open [http://localhost:3000](http://localhost:3000) to use the app.
 
 ## API Endpoints
 
-| Endpoint | Description |
-|-----------|--------------|
-| `/refine` | Clarifies vague ideas and asks follow-up questions |
-| `/breakdown` | Breaks refined ideas into actionable tasks |
-| `/plan` | Converts tasks into a sequenced plan with timing hints |
+| Endpoint | Description | Status |
+|-----------|--------------|---|
+| `/refine` | Clarifies vague ideas and asks follow-up questions | ⚙️ Minimal ready |
+| `/breakdown` | Breaks refined ideas into actionable tasks | 🚧 In progress |
+| `/plan` | Converts tasks into a sequenced plan with timing hints | 🔜 |
 
 ## Example Flow
 
