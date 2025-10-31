@@ -164,7 +164,23 @@ class PlanStep(BaseModel):
         ...,
         description='Asingle concise step starting with a strong verb < 15 words',
         min_length=4, max_length=140,
-        # examples=[''],
+        examples=[
+            # Health
+            "Prepare 250 mL water and cold bottle compress",
+            "Run 2-minute temple and jaw release at desk",
+
+            # Cure for Ω
+            "Define daily symptom log fields for one week",
+            "Cluster logged symptoms by trigger and time of day",
+
+            # Obsidian research
+            "Outline Problem, Approach, Results, Next in four bullets",
+            "Consolidate notes from 'research/' into four sections",
+
+            # Plan my path
+            "List target AI platform roles and weekly learning blocks",
+            "Schedule two certification study blocks this week"
+        ],
     )
 
 
@@ -187,7 +203,29 @@ class BreakdownRequest(BaseModel):
     definition: str = Field(
         ...,
         description='The clarified goal or definition of done to plan',
-        # examples=['']
+        examples=[
+            # Health
+            (
+                "Desk friendly plan to reduce tension headache within 30 minutes using hydration, "
+                "100 mg caffeine if available, a cold bottle compress, a posture reset, and a short "
+                "temple and jaw release. Assumes access to water and light caffeine."
+            ),
+            # Cure for Ω
+            (
+                "Research program to identify Ω: log triggers, cluster symptoms, prioritize likely causes, "
+                "and run low risk experiments with defined observation windows and stop rules."
+            ),
+            # Obsidian research
+            (
+                "Create a 10 minute talk outline by consolidating Obsidian notes in 'research/' into "
+                "Problem, Approach, Results, and Next steps with no more than three bullets per section."
+            ),
+            # Plan my path
+            (
+                "Six month path toward AI platform roles with weekly learning blocks, two certifications, "
+                "a public MVP, and portfolio updates, scheduled within hours per week constraint."
+            )
+        ]
     )
     max_steps: Optional[int] = Field(
         default=7,
