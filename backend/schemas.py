@@ -156,3 +156,49 @@ class RefineResponse(BaseModel):
             if len(q) > 200:
                 raise ValueError("each question must be ≤ 200 characters")
         return trimmed
+
+
+class PlanStep(BaseModel):
+    """One actionable step. verb, object, and qualifier. < 15 words"""
+    text: str = Field(
+        ...,
+        description='Asingle concise step starting with a strong verb < 15 words',
+        min_length=4, max_length=140,
+        # examples=[''],
+    )
+
+
+class PlanOption(BaseModel):
+    """A named option. Lean or Thorough with 3 to 7 steps"""
+    name: str = Field(
+        ...,
+        description='Human-readable option name',
+        examples=['Lean Plan', 'Thorough Plan']
+    )
+    steps: List[PlanStep] = Field(
+        ...,
+        description='Ordered list of actionable steps',
+        min_length=3, max_length=7
+    )
+
+
+class BreakdownRequest(BaseModel):
+    """Approved definition of done or refined idea to turn into plan options"""
+    definition: str = Field(
+        ...,
+        description='The clarified goal or definition of done to plan',
+        # examples=['']
+    )
+    max_steps: Optional[int] = Field(
+        default=7,
+        description='hard ceiling for stepsper plan min 3 to max 7 recommended'
+    )
+
+
+class BreakdownResponse(BaseModel):
+    """Two alternative plans to choose from."""
+    plans: List[PlanOption] = Field(
+        ...,
+        description='Exactly two options. "Lean Plan" or "Thorough Plan"',
+        min_length=2, max_length=2
+    )
