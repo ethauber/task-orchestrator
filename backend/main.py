@@ -5,8 +5,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import HttpUrl
 
-from backend.schemas import Health, PingResponse, RefineRequest, RefineResponse
+from backend.schemas import (
+    Health, PingResponse, RefineRequest, RefineResponse,
+    BreakdownRequest, BreakdownResponse
+)
 from backend.llm_refine import refine_with_lang
+from backend.llm_breakdown import breakdown_with_lc
 
 load_dotenv()
 
@@ -71,3 +75,15 @@ def refine(request: RefineRequest):
         return out
     except Exception as gen_exception:
         raise HTTPException(502, detail=f'refine failed with\n{gen_exception}')
+
+
+@app.post('/breakdown', response_model=BreakdownResponse)
+def breakdown(req: BreakdownRequest):
+    try:
+        out = breakdown_with_lc(req)
+        for p in out.plans:
+            p.name = (p.name or '').strip() or 'Plan'
+            p.steps = [s for s in p.steps if s.text.strip()][: min(len(p.steps), req.max_steps or 7)]
+            return out
+    except Exception as general_exception:
+        raise HTTPException(status_code=502, detail=f'breakdown failed with\n{general_exception}')
