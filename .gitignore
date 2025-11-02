@@ -242,3 +242,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Frontend (allow src/lib)
+!frontend/src/lib/
