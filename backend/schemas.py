@@ -1,6 +1,8 @@
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator, HttpUrl
+from pydantic import (
+    BaseModel, Field, field_validator, HttpUrl
+)
 
 
 class Health(BaseModel):
@@ -239,4 +241,70 @@ class BreakdownResponse(BaseModel):
         ...,
         description='Exactly two options. "Lean Plan" or "Thorough Plan"',
         min_length=2, max_length=2
+    )
+
+
+class PlanRequest(BaseModel):
+    """Finalize a selected option into an actionable plan with durations and light deps"""
+    optionName: str = Field(
+        ...,
+        description='Human label of the selected option (e.g., \'Lean Plan\')'
+    )
+    steps: List[PlanStep] = Field(
+        ...,
+        description='Ordered steps from the selected option',
+        min_length=3, max_length=12,
+        examples=[
+            # Obsidian research example (short, imperative, <15 words each)
+            [
+                {"text": "Gather key notes from research"},
+                {"text": "Identify main themes and points"},
+                {"text": "Outline talk structure with three sections"},
+            ]
+        ]
+    )
+    total_minutes: Optional[int] = Field(
+        default=None,
+        description='Optional time budget to fit the plan into minutes. Round to 15 intervals',
+        examples=[120, 240]
+    )
+
+
+class FinalStep(BaseModel):
+    """Finalized step with duration and optional dependencies"""
+    text: str = Field(
+        ...,
+        description='Same imperative ste text. concise',
+        min_length=4, max_length=140
+    )
+    duration_minutes: int = Field(
+        ...,
+        description='Whole minutes. Multiples of 15',
+        examples=[15, 30, 45, 60]
+    )
+    depends_on: Optional[List[int]] = Field(
+        default=None,
+        description='Optional 1-based indicies of prerequisite steps',
+        examples=[[1], [2, 3]]
+    )
+    parked: bool = Field(
+        default=False, description='True if moved out-of-scope to meet total_minutes'
+    )
+
+
+class PlanResponse(BaseModel):
+    """Final plan that fits constraints. Overflow steps are parked"""
+    optionName: str = Field(..., examples=['Lean Plan'])
+    steps: List[FinalStep] = Field(
+        ..., description='Steps in execution order with durations and deps'
+    )
+    total_duration: int = Field(
+        ...,
+        description='Sum of non-parked durations (minutes).',
+        examples=[90, 180]
+    )
+    parked_indices: List[int] = Field(
+        default_factory=List,
+        description='1-based indices of steps parked due to constraints',
+        examples=[[5, 6]]
     )
