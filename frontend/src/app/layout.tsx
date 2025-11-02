@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -24,10 +25,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body style={{ fontFamily: 'system-ui, sans-serif' }}>
+        <header style={{ padding: 12, borderBottom: '1px solid #333' }}>
+          <nav style={{ display: 'flex', gap: 16 }}>
+            <Link href='/'>Home</Link>
+            <Link href='/health'>Health</Link>
+            <Link href='/breakdown'>Breakdown</Link>
+          </nav>
+        </header>
+        <main style={{ padding: 24 }}>{children}</main>
       </body>
     </html>
   );
