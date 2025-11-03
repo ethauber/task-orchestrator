@@ -7,10 +7,12 @@ from pydantic import HttpUrl
 
 from backend.schemas import (
     Health, PingResponse, RefineRequest, RefineResponse,
-    BreakdownRequest, BreakdownResponse
+    BreakdownRequest, BreakdownResponse, PlanRequest,
+    PlanResponse
 )
 from backend.llm_refine import refine_with_lang
 from backend.llm_breakdown import breakdown_with_lc
+from backend.llm_plan import plan_with_lc
 
 load_dotenv()
 
@@ -87,3 +89,19 @@ def breakdown(req: BreakdownRequest):
             return out
     except Exception as general_exception:
         raise HTTPException(status_code=502, detail=f'breakdown failed with\n{general_exception}')
+
+
+@app.post('/plan', response_model=PlanResponse)
+def plan(req: PlanRequest):
+    try:
+        out = plan_with_lc(req)
+        # until tool calling is implemented force 15 min multiples old fashioned way
+        for s in out.steps:
+            q = int(round(s.duration_minutes) / 15.0) * 15
+            s.duration_minutes = 15 if q < 15 else q
+
+        out.parked_indices = [i + 1 for i, s in enumerate(out.steps) if s.parked]
+        out.total_duration = sum(s.duration_minutes for s in out.steps if not s.parked)
+        return out
+    except Exception as general_exception:
+        raise HTTPException(status_code=502, detail=f'plan failed with\n{general_exception}')

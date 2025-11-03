@@ -1,7 +1,7 @@
 from typing import List, Literal, Optional
 
 from pydantic import (
-    BaseModel, Field, field_validator, HttpUrl
+    BaseModel, Field, field_validator, HttpUrl, model_validator
 )
 
 
@@ -291,6 +291,28 @@ class FinalStep(BaseModel):
         default=False, description='True if moved out-of-scope to meet total_minutes'
     )
 
+    @field_validator("depends_on", mode="before")
+    @classmethod
+    def coerce_depends_to_ints(cls, v):
+        """
+        LLM untrusted without tool calling yet.
+        Coerce to ints and drop non integers
+        """
+        if v is None:
+            return None
+
+        if not isinstance(v, list):
+            v = [v]
+
+        coerced = []
+        for x in v:
+            try:
+                coerced.append(int(x))
+            except (TypeError, ValueError):
+                print(f'Dropped non-coercible entry {x}')
+                continue
+        return coerced or None
+
 
 class PlanResponse(BaseModel):
     """Final plan that fits constraints. Overflow steps are parked"""
@@ -308,3 +330,18 @@ class PlanResponse(BaseModel):
         description='1-based indices of steps parked due to constraints',
         examples=[[5, 6]]
     )
+
+    @model_validator(mode="after")
+    def _normalize_dependencies(self):
+        """
+        After step length is known clamp to 1 to N, drop self dependencies,
+        dedupe, and sort
+        """
+        n = len(self.steps)
+        for idx, step in enumerate(self.steps, start=1):
+            deps = step.depends_on
+            if not deps:
+                continue
+            valid = {d for d in deps if 1 <= d <= n and d != idx}
+            step.depends_on = sorted(valid) if valid else None
+        return self
