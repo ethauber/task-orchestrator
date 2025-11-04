@@ -35,11 +35,6 @@ export default function BreakdownPage() {
     const [breakErr, setBreakErr] = useState<string>('');
     const [plans, setPlans] = useState<BreakdownResponse | null>(null);
 
-    const [definition, setDefinition] = useState<string>(
-        'Create a 10 minute talk outline by consolidating notes'
-    );
-    // const [data, setData] = useState<BreakdownResponse | null>(null);
-
     // Step 3: plan
     const [selected, setSelected] = useState<number | null>(null);
     const [budget, setBudget] = useState<number | ''>('');
