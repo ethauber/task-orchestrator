@@ -23,7 +23,8 @@ type PlanResponse = {
 
 export default function BreakdownPage() {
     // Step 1: refine
-    const [idea, setIdea] = useState<string>('Create a 10 minute outline by consolidating notes');
+    // 'Create a 10 minute outline by consolidating notes'
+    const [idea, setIdea] = useState<string>('');
     const [refineLoading, setRefineLoading] = useState(false);
     const [refineErr, setRefineErr] = useState<string>('');
     const [refined, setRefined] = useState<RefineResponse | null>(null);
@@ -211,7 +212,7 @@ export default function BreakdownPage() {
                         style={{ ...styles.input }}
                     />
                 </label>
-                <button disabled={breakLoading || (!refined && idea.length < 20)} style={{ ...styles.button, ...(breakLoading || (!refined && idea.length < 20) ? styles.buttonDisabled : {})}}>
+                <button disabled={breakLoading || !refined} style={{ ...styles.button, ...(breakLoading || !refined ? styles.buttonDisabled : {})}}>
                     {breakLoading ? 'Generating...' : 'Generate Plan Options'}
                 </button>
             </form>
