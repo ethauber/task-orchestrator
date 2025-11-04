@@ -102,11 +102,6 @@ class RefineResponse(BaseModel):
                 "Research program to identify Ω: log triggers, cluster symptoms, prioritize likely causes, "
                 "and run low risk experiments with defined observation windows and stop rules."
             ),
-            # Obsidian research
-            (
-                "Create a 10 minute talk outline by consolidating Obsidian notes in 'research/' into "
-                "Problem, Approach, Results, and Next steps with no more than three bullets per section."
-            ),
             # Plan my path
             (
                 "Six month path toward AI platform roles with weekly learning blocks, two certifications, "
@@ -133,12 +128,6 @@ class RefineResponse(BaseModel):
                 "Can you track onset times and preceding activities for one week?",
                 "Are there known allergens or workspace factors to include in the log?",
                 "Is it acceptable to try one variable change per day?"
-            ],
-            [
-                # Obsidian research
-                "Should citations appear inline or in a final references section?",
-                "Is the audience technical or general?",
-                "Do you want images or just text bullets?"
             ],
             [
                 # Plan my path
@@ -174,10 +163,6 @@ class PlanStep(BaseModel):
             # Cure for Ω
             "Define daily symptom log fields for one week",
             "Cluster logged symptoms by trigger and time of day",
-
-            # Obsidian research
-            "Outline Problem, Approach, Results, Next in four bullets",
-            "Consolidate notes from 'research/' into four sections",
 
             # Plan my path
             "List target AI platform roles and weekly learning blocks",
@@ -217,11 +202,6 @@ class BreakdownRequest(BaseModel):
                 "Research program to identify Ω: log triggers, cluster symptoms, prioritize likely causes, "
                 "and run low risk experiments with defined observation windows and stop rules."
             ),
-            # Obsidian research
-            (
-                "Create a 10 minute talk outline by consolidating Obsidian notes in 'research/' into "
-                "Problem, Approach, Results, and Next steps with no more than three bullets per section."
-            ),
             # Plan my path
             (
                 "Six month path toward AI platform roles with weekly learning blocks, two certifications, "
@@ -254,14 +234,7 @@ class PlanRequest(BaseModel):
         ...,
         description='Ordered steps from the selected option',
         min_length=3, max_length=12,
-        examples=[
-            # Obsidian research example (short, imperative, <15 words each)
-            [
-                {"text": "Gather key notes from research"},
-                {"text": "Identify main themes and points"},
-                {"text": "Outline talk structure with three sections"},
-            ]
-        ]
+        examples=[]
     )
     total_minutes: Optional[int] = Field(
         default=None,
