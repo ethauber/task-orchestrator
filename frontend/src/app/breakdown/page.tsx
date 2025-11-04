@@ -140,7 +140,7 @@ export default function BreakdownPage() {
         buttonHover: { backgroundColor: '#0052a3' },
         buttonDisabled: { backgroundColor: '#ccc', cursor: 'not-allowed' },
         error: { color: '#d32f2f', marginTop: 8, fontSize: 14 },
-        planItem: { padding: 12, marginBottom: 12, backgroundColor: 'white', border: '2px solid #e0e0e0', borderRadius: 6, cursor: 'pointer', transition: 'all 0.2s' },
+        planItem: { padding: 12, marginBottom: 12, backgroundColor: 'white', borderWidth: 2, borderColor: '#e0e0e0', borderStyle: 'solid', borderRadius: 6, cursor: 'pointer', transition: 'all 0.2s' },
         planSelected: { borderColor: '#0066cc', backgroundColor: '#f0f7ff' },
         h1: { fontSize: 28, fontWeight: 600, marginBottom: 24, color: '#1a1a1a' },
         h2: { fontSize: 20, fontWeight: 600, marginTop: 24, marginBottom: 16, color: '#1a1a1a' },
