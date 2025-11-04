@@ -121,29 +121,54 @@ export default function BreakdownPage() {
         }
     }
     // end handlers
+    // start styling
+    type Styles = {
+        [key: string]: React.CSSProperties;
+    }
+    const styles: Styles = {
+        container: { maxWidth: 900, margin: '0 auto', padding: 24, fontFamily: 'system-ui, -apple-system, sans-serif' },
+        section: { marginTop: 24, padding: 16, backgroundColor: '#f9f9f9', borderRadius: 8, border: '1px solid #e0e0e0' },
+        label: {
+            display: 'block', marginBottom: 8,
+            fontWeight: 500, fontSize: 14, color: '#333',
+            // textDecorationLine: 'underline'
+        },
+        textarea: { width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 6, fontSize: 14, fontFamily: 'inherit', resize: 'vertical' },
+        input: { padding: 10, border: '1px solid #ddd', borderRadius: 6, fontSize: 14 },
+        button: { padding: '10px 16px', backgroundColor: '#0066cc', color: 'white', border: 'none', borderRadius: 6, fontWeight: 500, cursor: 'pointer', transition: 'background 0.2s' },
+        buttonHover: { backgroundColor: '#0052a3' },
+        buttonDisabled: { backgroundColor: '#ccc', cursor: 'not-allowed' },
+        error: { color: '#d32f2f', marginTop: 8, fontSize: 14 },
+        planItem: { padding: 12, marginBottom: 12, backgroundColor: 'white', border: '2px solid #e0e0e0', borderRadius: 6, cursor: 'pointer', transition: 'all 0.2s' },
+        planSelected: { borderColor: '#0066cc', backgroundColor: '#f0f7ff' },
+        h1: { fontSize: 28, fontWeight: 600, marginBottom: 24, color: '#1a1a1a' },
+        h2: { fontSize: 20, fontWeight: 600, marginTop: 24, marginBottom: 16, color: '#1a1a1a' },
+        h3: { fontSize: 16, fontWeight: 600, marginTop: 16, marginBottom: 12, color: '#333' },
+    };
+    // end styling
 
     return (
-        <section>
-            <h1>Breakdown Workbench</h1>
+        <section style={styles.container}>
+            <h1 style={{...styles.h1}}>Breakdown Workbench</h1>
             <form onSubmit={onRefine} style={{ display: 'grid', gap: 12, maxWidth: 860 }}>
-                <label>
+                <label style={{...styles.label}}>
                     <div>Idea</div>
                     <textarea
                         rows={4}
                         value={idea}
                         onChange={(e) => setIdea(e.target.value)}
-                        style={{ width: '100%' }}
+                        style={{...styles.textarea}}
                     />
                 </label>
-                <button disabled={refineLoading || idea.length < 10}>
+                <button disabled={refineLoading || idea.length < 10} style={{ ...styles.button, ...(refineLoading || idea.length < 10 ? styles.buttonDisabled : {})}}>
                     {refineLoading ? 'Refining...' : 'Refine Idea'}
                 </button>
             </form>
-            {refineErr && <p style={{ color: 'crimson', marginTop: 8}}>{refineErr}</p>}
+            {refineErr && <p style={{ ...styles.error }}>{refineErr}</p>}
 
             {refined && (
-                <section style={{ marginTop: 16 }}>
-                    <h3>Refined Idea</h3>
+                <section style={styles.section}>
+                    <h3 style={{...styles.h3}}>Refined Idea</h3>
                     <p>{refined.refinedIdea}</p>
 
                     {refined.questions.length > 0 && (
@@ -162,7 +187,7 @@ export default function BreakdownPage() {
                                                 setAnswers(next);
                                             }}
                                             placeholder='Your answer (optional)'
-                                            style={{ width: '100%' }}
+                                            style={{ ...styles.input }}
                                         />
                                     </li>
                                 ))}
@@ -175,7 +200,7 @@ export default function BreakdownPage() {
             )}
 
             <form onSubmit={onBreakdown} style={{ display: 'grid', gap: 12, maxWidth: 860, marginTop: 24 }}>
-                <label>
+                <label style={{...styles.label}}>
                     <div>Max steps per plan 3 to 7</div>
                     <input
                         type='number'
@@ -183,41 +208,43 @@ export default function BreakdownPage() {
                         max={7}
                         value={maxSteps}
                         onChange={(e) => setMaxSteps(parseInt(e.target.value || '5', 10))}
+                        style={{ ...styles.input }}
                     />
                 </label>
-                <button disabled={breakLoading || (!refined && idea.length < 20)}>
+                <button disabled={breakLoading || (!refined && idea.length < 20)} style={{ ...styles.button, ...(breakLoading || (!refined && idea.length < 20) ? styles.buttonDisabled : {})}}>
                     {breakLoading ? 'Generating...' : 'Generate Plan Options'}
                 </button>
             </form>
-            {breakErr && <p style={{ color: 'crimson', marginTop: 8 }}>{breakErr}</p>}
+            {breakErr && <p style={{ ...styles.error }}>{breakErr}</p>}
 
             {plans && (
-                <section style={{ marginTop: 24 }}>
-                    <h2>Plan Options</h2>
+                <section style={styles.section}>
+                    <h2 style={{...styles.h2}}>Plan Options</h2>
                     {plans.plans.map((plan, planIndex) => (
-                        <div key={planIndex} style={{ marginBottom: 16 }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: 8}}>
+                        <div key={planIndex} style={{...styles.planItem, ...(selected === planIndex ? styles.planSelected : {})}}>
+                            <label style={{...styles.label}}>
                                 <input
                                     type='radio'
                                     name='plan'
                                     checked={selected === planIndex}
                                     onChange={() => setSelected(planIndex)}
+                                    style={{ ...styles.input }}
                                 />
-                                <strong>{plan.name}</strong>
+                                <strong style={{marginLeft: 8}}>{plan.name}</strong>
                             </label>
                             <ol>{plan.steps.map((step, stepIndex) => <li key={stepIndex}>{step.text}</li>)}</ol>
                         </div>
                     ))}
 
-                    <h3>Raw JSON</h3>
+                    <h3 style={{...styles.h3}}>Raw JSON</h3>
                     <Json data={plans} />
                 </section>
             )}
 
             {plans && (
-                <section style={{ marginTop: 16 }}>
+                <section style={styles.section}>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                        <label>
+                        <label style={{...styles.label}}>
                             Time estimates (minutes, optional):{' '}
                             <input
                                 type='number'
@@ -225,17 +252,18 @@ export default function BreakdownPage() {
                                 step={15}
                                 value={budget as number | ''}
                                 onChange={(e) => setBudget(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                                style={{ ...styles.input }}
                             />
                         </label>
-                        <button disabled={selected === null || finalLoading} onClick={onFinalize}>
+                        <button disabled={selected === null || finalLoading} onClick={onFinalize} style={{ ...styles.button, ...(selected === null || finalLoading ? styles.buttonDisabled : {})}}>
                             {finalLoading ? 'Finalizing...' : 'Finalize Plan'}
                         </button>
                     </div>
-                    {finalErr && <p style={{ color: 'crimson', marginTop: 8 }}>{finalErr}</p>}
+                    {finalErr && <p style={{ ...styles.error }}>{finalErr}</p>}
 
                     {finalPlan && (
-                        <section style={{ marginTop: 12 }}>
-                            <h3>Final Plan ({finalPlan.optionName})</h3>
+                        <section style={styles.section}>
+                            <h3 style={{...styles.h3}}>Final Plan ({finalPlan.optionName})</h3>
                             <p>Total duration: {finalPlan.total_duration} min</p>
                             <ol>
                                 {finalPlan.steps.map((step: any, stepIndex: any) => (
