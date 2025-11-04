@@ -97,7 +97,7 @@ def plan(req: PlanRequest):
         out = plan_with_lc(req)
         # until tool calling is implemented force 15 min multiples old fashioned way
         for s in out.steps:
-            q = int(round(s.duration_minutes) / 15.0) * 15
+            q = int(round(s.duration_minutes / 15.0)) * 15
             s.duration_minutes = 15 if q < 15 else q
 
         out.parked_indices = [i + 1 for i, s in enumerate(out.steps) if s.parked]
