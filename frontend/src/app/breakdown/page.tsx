@@ -3,6 +3,8 @@ import { useState, FormEvent as ReactFormEvent } from 'react';
 import { postJSON } from '@/lib/api';
 import { Json } from '@/components/Json';
 
+import useSystemDarkMode from './systemAppearance';
+
 type RefineResponse = {
     refinedIdea: string;
     questions: string[];
@@ -42,6 +44,8 @@ export default function BreakdownPage() {
     const [finalPlan, setFinalPlan] = useState<any>(null);
     const [finalLoading, setFinalLoading] = useState(false);
     const [finalErr, setFinalErr] = useState<string>("");
+    //
+    const isDarkMode = useSystemDarkMode();
 
     // start handlers
     async function onRefine(e: ReactFormEvent) {
@@ -123,28 +127,59 @@ export default function BreakdownPage() {
     }
     // end handlers
     // start styling
+    // Color themes
+    const colors = isDarkMode ? {
+        bgPrimary: '#0a0a0a',
+        bgSecondary: '#1a1a1a',
+        bgTertiary: '#2a2a2a',
+        textPrimary: '#e0e0e0',
+        textSecondary: '#a0a0a0',
+        border: '#404040',
+        inputBg: '#1a1a1a',
+        selectedBg: '#1a3a5a',
+    } : {
+        bgPrimary: '#ffffff',
+        bgSecondary: '#f9f9f9',
+        bgTertiary: '#ffffff',
+        textPrimary: '#1a1a1a',
+        textSecondary: '#333',
+        border: '#e0e0e0',
+        inputBg: '#ffffff',
+        selectedBg: '#f0f7ff',
+    };
+
     type Styles = {
         [key: string]: React.CSSProperties;
     }
     const styles: Styles = {
         container: { maxWidth: 900, margin: '0 auto', padding: 24, fontFamily: 'system-ui, -apple-system, sans-serif' },
-        section: { marginTop: 24, padding: 16, backgroundColor: '#f9f9f9', borderRadius: 8, border: '1px solid #e0e0e0' },
+        section: { marginTop: 24, padding: 16, backgroundColor: colors.bgSecondary, borderRadius: 8, border: `1px solid ${colors.border}` },
         label: {
             display: 'block', marginBottom: 8,
-            fontWeight: 500, fontSize: 14, color: '#333',
-            // textDecorationLine: 'underline'
+            fontWeight: 500, fontSize: 14, color: colors.textSecondary,
         },
-        textarea: { width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 6, fontSize: 14, fontFamily: 'inherit', resize: 'vertical' },
-        input: { padding: 10, border: '1px solid #ddd', borderRadius: 6, fontSize: 14 },
+        textarea: { 
+            width: '100%', padding: 12, border: `1px solid ${colors.border}`, borderRadius: 6, 
+            fontSize: 14, fontFamily: 'inherit', resize: 'vertical', 
+            backgroundColor: colors.inputBg, color: colors.textPrimary 
+        },
+        input: { 
+            padding: 10, border: `1px solid ${colors.border}`, borderRadius: 6, fontSize: 14,
+            backgroundColor: colors.inputBg, color: colors.textPrimary 
+        },
         button: { padding: '10px 16px', backgroundColor: '#0066cc', color: 'white', border: 'none', borderRadius: 6, fontWeight: 500, cursor: 'pointer', transition: 'background 0.2s' },
         buttonHover: { backgroundColor: '#0052a3' },
         buttonDisabled: { backgroundColor: '#ccc', cursor: 'not-allowed' },
         error: { color: '#d32f2f', marginTop: 8, fontSize: 14 },
-        planItem: { padding: 12, marginBottom: 12, backgroundColor: 'white', borderWidth: 2, borderColor: '#e0e0e0', borderStyle: 'solid', borderRadius: 6, cursor: 'pointer', transition: 'all 0.2s' },
-        planSelected: { borderColor: '#0066cc', backgroundColor: '#f0f7ff' },
-        h1: { fontSize: 28, fontWeight: 600, marginBottom: 24, color: '#1a1a1a' },
-        h2: { fontSize: 20, fontWeight: 600, marginTop: 24, marginBottom: 16, color: '#1a1a1a' },
-        h3: { fontSize: 16, fontWeight: 600, marginTop: 16, marginBottom: 12, color: '#333' },
+        planItem: { 
+            padding: 12, marginBottom: 12, backgroundColor: colors.bgTertiary, 
+            borderWidth: 2, borderColor: colors.border, borderStyle: 'solid', 
+            borderRadius: 6, cursor: 'pointer', transition: 'all 0.2s' 
+        },
+        planSelected: { borderColor: '#0066cc', backgroundColor: colors.selectedBg },
+        h1: { fontSize: 28, fontWeight: 600, marginBottom: 24, color: colors.textPrimary },
+        h2: { fontSize: 20, fontWeight: 600, marginTop: 24, marginBottom: 16, color: colors.textPrimary },
+        h3: { fontSize: 16, fontWeight: 600, marginTop: 16, marginBottom: 12, color: colors.textSecondary },
     };
     // end styling
 
