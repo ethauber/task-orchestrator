@@ -1,27 +1,16 @@
 'use client';
 import { useState, FormEvent as ReactFormEvent } from 'react';
+
+import type {
+    RefineResponse,
+    BreakdownResponse,
+    PlanResponse
+} from '@/lib/types';
 import { postJSON } from '@/lib/api';
 import { Json } from '@/components/Json';
 
 import useSystemDarkMode from './systemAppearance';
 
-type RefineResponse = {
-    refinedIdea: string;
-    questions: string[];
-};
-
-type PlanStep = { text: string };
-type PlanOption = { name: string; steps: PlanStep[] };
-type BreakdownResponse = { plans: PlanOption[] };
-
-type FinalStep = {
-    text: string; duration_minutes:number; depends_on?: number[];
-    parked: boolean
-};
-type PlanResponse = {
-    optionName: string; steps: FinalStep[]; total_duration: number;
-    parked_indices: number[]
-};
 
 export default function BreakdownPage() {
     // Step 1: refine
