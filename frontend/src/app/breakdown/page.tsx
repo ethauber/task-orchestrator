@@ -219,8 +219,8 @@ export default function BreakdownPage() {
                             </ol>
                         </>
                     )}
-                    <h4>Refine JSON</h4>
-                    <Json data={refined}/>
+                    {/* <h4>Refine JSON</h4>
+                    <Json data={refined}/> */}
                 </section>
             )}
 
@@ -261,8 +261,8 @@ export default function BreakdownPage() {
                         </div>
                     ))}
 
-                    <h3 style={{...styles.h3}}>Raw JSON</h3>
-                    <Json data={plans} />
+                    {/* <h3 style={{...styles.h3}}>Raw JSON</h3>
+                    <Json data={plans} /> */}
                 </section>
             )}
 
@@ -299,8 +299,8 @@ export default function BreakdownPage() {
                                     </li>
                                 ))}
                             </ol>
-                            <h4>Raw JSON</h4>
-                            <Json data={finalPlan} />
+                            {/* <h4>Raw JSON</h4>
+                            <Json data={finalPlan} /> */}
                         </section>
                     )}
                 </section>
