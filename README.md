@@ -103,6 +103,12 @@ Built for local idea refinement and planning without relying on the cloud. Also,
 https://docs.ollama.com/linux
 https://mermaid.js.org/intro/
 https://python-poetry.org/docs/basic-usage/
-https://fastapi.tiangolo.com/#sponsors
+https://fastapi.tiangolo.com/
 https://docs.langchain.com/oss/python/langchain/overview#install
+
+https://docs.langchain.com/oss/python/integrations/providers/ollama
+https://docs.ollama.com/capabilities/streaming
+https://reference.langchain.com/python/integrations/langchain_ollama/#langchain_ollama.ChatOllama.astream
+
+
 ```
