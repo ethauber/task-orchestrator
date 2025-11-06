@@ -259,7 +259,9 @@ export default function BreakdownPage() {
                                 />
                                 <strong style={{marginLeft: 8}}>{plan.name}</strong>
                             </label>
-                            <ol>{plan.steps.map((step, stepIndex) => <li key={stepIndex}>{step.text}</li>)}</ol>
+                            <ol>{plan.steps.map((step: any, stepIndex: number) => (
+                                <li key={stepIndex}>{typeof step === 'string' ? step : step.text}</li>
+                            ))}</ol>
                         </div>
                     ))}
                 </section>
