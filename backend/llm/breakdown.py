@@ -2,29 +2,16 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 
-from backend.llm import base_chat_llm
+from backend.llm import base_chat_llm, load_prompts
 from backend.schemas import BreakdownRequest, BreakdownResponse
-
 
 
 parser = PydanticOutputParser(pydantic_object=BreakdownResponse)
 
-SYSTEM = (
-    'You are a planning assistant. Given a clear goal (Definition of done), '
-    'produce exactly TWO plan options. A Lean Plan and a Thorough Plan. '
-    'Each plan has 3 to 7 steps. Each step is a single imperative sentence '
-    'starting with a strong verb, under 15 words, concrete, and actionable. '
-    'Do NOT include durations, scheduling, or owners. Use the schema exactly\n\n'
-    '{format_instructions}'
-)
-
-HUMAN = (
-    'Definition of done:\n{definition}\n\n'
-    'Max steps per plan: {max_steps}\n'
-)
+prompts_ = load_prompts('breakdown.json')
 
 prompt = ChatPromptTemplate.from_messages([
-    ('system', SYSTEM), ('human', HUMAN)
+    ('system', prompts_['system']), ('human', prompts_['human'])
 ])
 
 chain = (
@@ -38,5 +25,8 @@ chain = (
     | parser
 )
 
+
 def breakdown_with_lc(req: BreakdownRequest) -> BreakdownResponse:
-    return chain.invoke({'definition': req.definition, 'max_steps': req.max_steps})
+    return chain.invoke({
+        'definition': req.definition, 'max_steps': req.max_steps
+    })

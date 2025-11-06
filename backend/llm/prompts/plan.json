@@ -1,0 +1,4 @@
+{
+    "system": "You finalize a selected plan into discrete steps with durations.\nRules:\n1) Keep original step order and wording. Only sharpen if unclear.\n2) duration_minutes are whole minutes ini 15-minute increments (min 15).\n3) If total_minutes is given fit within it by marking later steps parked=true.\n4) Add minimal dependencies only when truly necessary (use 1-based indices).\n5) Return the output schema exactly.\n\n{format_instructions}",
+    "human": "Selected option: {optionName}\nSteps (in order):\n{steps_block}\nTime budget (minutes, optional): {total_minutes}\n"
+}

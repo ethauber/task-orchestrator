@@ -1,32 +1,29 @@
+from json import load
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 
-from backend.llm import base_chat_llm
+from backend.llm import base_chat_llm, load_prompts
 from backend.schemas import RefineRequest, RefineResponse
 
 
-SYSTEM = (
-    "You help clients turn vague ideas into a concreate 'refinedIdea' and up to three"
-    " 'questions'. Questions must be short, specific, and only included if essential."
-    " Use the following output schema exactly\n\n{format_instructions}"
-)
 # Populates the format_instructions
 parser = PydanticOutputParser(pydantic_object=RefineResponse)
 
-CLIENT = (
-    "Idea:\n{idea}\n"
-    "{context_block}"
-)
+prompts_ = load_prompts('refine.json')
+
+
 # Populates the context_block
 def _context_block(context: str | None) -> str:
-    """Anything in RunnableParallel called with same input so still receies context"""
+    """Anything in RunnableParallel called
+       with the same input will still receive context"""
     return f"Additional context from the client:\n{context}" \
         if context else "No additional context"
 
+
 prompt = ChatPromptTemplate.from_messages([
-    ("system", SYSTEM),
-    ("human", CLIENT)
+    ("system", prompts_['refine.json']),
+    ("human", prompts_['human.json'])
 ])
 
 chain = (
