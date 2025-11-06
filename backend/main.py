@@ -16,8 +16,8 @@ from backend.schemas import (
     PlanResponse
 )
 from backend.llm.refine import refine_with_lang, chain as refine_chain
-from backend.llm.breakdown import breakdown_with_lc
-from backend.llm.plan import plan_with_lc
+from backend.llm.breakdown import breakdown_with_lc, chain as breakdown_chain
+from backend.llm.plan import plan_with_lc, chain as plan_chain
 
 
 app = FastAPI(title="task-orchestrator-backend", version="0.1.0")
@@ -32,60 +32,31 @@ app.add_middleware(
 
 def _sse_format(type_, data_):
     result = f"data: {json.dumps({'type': type_, 'data': data_})}\n\n"
-    print(f'result: {result}')
+    # print(f'result: {result}')
     return result
 
 
-async def stream_json_response(chain, input_data: dict) -> AsyncGenerator[str, None]:
-    """
-    Stream LangChain output as SSE
-    Accumulates chuns into valid JSON at the end
-    """
-    content_buffer = ""
-    final_object = None
-    try:
-        async for chunk in chain.astream(input_data):
-            print(f'chunk is {chunk} with type {type(chunk)}')
-            if isinstance(chunk, dict):
-                final_object = chunk
-                break
-
-            if hasattr(chunk, 'content'):
-                text = chunk.content
-            elif isinstance(chunk, str):
-                text = chunk
-            else:
-                continue  # ignore for now internal langchain step toks
-
-            content_buffer += text
-            yield _sse_format('content', text)
-
-        if final_object:
-            yield _sse_format('done', final_object)
-        else:
-            try:
-                print(f'Non CLEANED {content_buffer}')
-                clean = content_buffer.replace('```json', '').replace('```', '').strip()
-                print(f'CLEANED {clean}')
-                final = json.loads(clean)
-                yield _sse_format('done', final)
-            except json.JSONDecodeError:
-                yield _sse_format('type', content_buffer)
-    except Exception as catchall_exception:
-        yield _sse_format('error', str(catchall_exception))
-
-
 async def event_stream(chain, payload) -> AsyncGenerator[str, None]:
+    """
+    Create compat func for langchain events to SSE streamable
+    """
     buffer = ''
-    async for event in chain.astream_events(payload):
-        # print(f'event : {event}')
-        if event['event'] == 'on_chat_model_stream':
-            # print(f"{event['data']['chunk'].content}\n")
-            chunk = event['data']['chunk']
-            print(f'chunk.content {chunk.content}')
-            buffer += chunk.content
-            yield _sse_format('thinking', chunk.content)
-    yield _sse_format('done', json.loads(buffer))
+    try:
+        async for event in chain.astream_events(payload):
+            # print(f'event : {event}')
+            if event['event'] == 'on_chat_model_stream':
+                # print(f"{event['data']['chunk'].content}\n")
+                chunk = event['data']['chunk']
+                buffer += chunk.content
+                yield _sse_format('thinking', chunk.content)
+
+        try:
+            clean = buffer.replace('```json', '').replace('```', '').strip()
+            yield _sse_format('done', json.loads(clean))
+        except json.JSONDecodeError:
+            yield _sse_format('type', buffer)
+    except Exception as catchall_e:
+        yield _sse_format('error', str(catchall_e))
 
 
 @app.post('/stream/refine')
@@ -93,6 +64,24 @@ async def stream_refine(request: RefineRequest):
     """Streaming refine using existing LangChain setup"""
     payload = {'idea': request.idea, 'context': request.context}
     return StreamingResponse(event_stream(refine_chain, payload))
+
+
+@app.post('/stream/breakdown')
+async def stream_breakdown(request: BreakdownRequest):
+    """Stream breakdown with existing lang setup"""
+    return StreamingResponse(event_stream(breakdown_chain, {
+        'definition': request.definition, 'max_steps': request.max_steps
+    }))
+
+
+@app.post('/stream/plan')
+async def stream_plan(request: PlanRequest):
+    """Stream plan with existing lang setup"""
+    return StreamingResponse(event_stream(plan_chain, {
+        'optionName': request.optionName,
+        'steps': request.steps,
+        'total_minutes': request.total_minutes
+    }))
 
 
 @app.get("/health", response_model=Health)

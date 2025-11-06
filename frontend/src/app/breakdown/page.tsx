@@ -6,8 +6,8 @@ import type {
     BreakdownResponse,
     PlanResponse
 } from '@/lib/types';
-import { postJSON, streamPost, useStreamingAction } from '@/lib/api';
-import { Json } from '@/components/Json';
+import { useStreamingAction } from '@/lib/api';
+// import { Json } from '@/components/Json';
 
 import useSystemDarkMode from './systemAppearance';
 
@@ -16,15 +16,15 @@ export default function BreakdownPage() {
     // Step 1: refine
     // example 'Create a 10 minute outline by consolidating notes'
     const [idea, setIdea] = useState<string>('');
-    // const [refineLoading, setRefineLoading] = useState(false);
     const [refined, setRefined] = useState<RefineResponse | null>(null);
     const [answers, setAnswers] = useState<string[]>([]);
+    const refineStream = useStreamingAction();
 
     // Step 2: breakdown
     const [maxSteps, setMaxSteps] = useState<number>(5);
-    const [breakLoading, setBreakLoading] = useState(false);
     const [breakErr, setBreakErr] = useState<string>('');
     const [plans, setPlans] = useState<BreakdownResponse | null>(null);
+    const breakdownStream = useStreamingAction();
 
     // Step 3: plan
     const [selected, setSelected] = useState<number | null>(null);
@@ -32,12 +32,9 @@ export default function BreakdownPage() {
     const [finalPlan, setFinalPlan] = useState<any>(null);
     const [finalLoading, setFinalLoading] = useState(false);
     const [finalErr, setFinalErr] = useState<string>("");
+    const finalizeStream = useStreamingAction()
     //
     const isDarkMode = useSystemDarkMode();
-
-    const refineStream = useStreamingAction();
-    const breakdownStream = useStreamingAction();
-    const finalizeStream = useStreamingAction()
 
     async function onRefine(e: ReactFormEvent) {
         e.preventDefault();
@@ -48,22 +45,12 @@ export default function BreakdownPage() {
         setFinalPlan(null);
         setAnswers([]);
 
-        // try {
-        //     setRefineLoading(true);
-        //     const json = await postJSON<RefineResponse>('/refine', { idea });
-        //     setRefined(json);
-        //     setAnswers(new Array(json.questions.length).fill(''));
-        // } catch (error: any) {
-        //     setRefineErr(String(error));
-        // } finally {
-        //     setRefineLoading(false);
-        // }
         const result = await refineStream.run<RefineResponse>('/stream/refine', { idea });
 
         if (!result) return;
 
         setRefined(result);
-        // setAnswers(new Array(result.questions.length).fill(""));
+        setAnswers(new Array(result.questions.length).fill(""));
     }
 
     async function onBreakdown(e: ReactFormEvent) {
@@ -88,40 +75,21 @@ export default function BreakdownPage() {
 
         const definition = answeredPairs ? `${baseDef}\n\n${answeredPairs}` : baseDef;
 
-        try {
-            setBreakLoading(true);
-            const json = await postJSON<BreakdownResponse>('/breakdown', {
-                definition,
-                max_steps: maxSteps
-            });
-            setPlans(json);
-        } catch (error: any) {
-            setBreakErr(String(error));
-        } finally {
-            setBreakLoading(false);
-        }
+        const result = await breakdownStream.run<BreakdownResponse>('/stream/breakdown', { definition, max_steps: maxSteps });
+        if (!result) return;
+        setPlans(result);
     }
 
     async function onFinalize() {
         if (!plans || selected === null) return;
-        try {
-            setFinalErr('');
-            setFinalPlan(null);
-            setFinalLoading(true);
-            const pick = plans.plans[selected];
-            const body = {
-                optionName: pick.name,
-                steps: pick.steps,
-                total_minutes: budget === '' ? null : budget
-            };
-            const json = await postJSON<PlanResponse>('/plan', body);
-            setFinalPlan(json);
-        } catch (error: any) {
-            setFinalErr(String(error));
-            setFinalPlan(null);
-        } finally {
-            setFinalLoading(false);
-        }
+
+        const result = await finalizeStream.run<PlanResponse>('/stream/plan', {
+            optionName: plans.plans[selected].name,
+            steps: plans.plans[selected].steps,
+            total_minutes: budget === '' ? null : budget
+        })
+        if (!result) return;
+        setFinalPlan(result);
     }
     // end handlers
     // start styling
@@ -211,10 +179,10 @@ export default function BreakdownPage() {
             </form>
             {refineStream.error && <p style={{ ...styles.error }}>{refineStream.error}</p>}
 
-            {refineStream.streaming && (
+            {(refineStream.loading || refineStream.streaming) && (
                 <div style={styles.thinking}>
                     <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 8, opacity: 0.7 }}>
-                        🤔 AI is thinking...
+                        {refineStream.loading ? '🤖 AI is generating...' : '✅'}
                     </div>
                     {refineStream.streaming}
                 </div>
@@ -262,12 +230,20 @@ export default function BreakdownPage() {
                         style={{ ...styles.input }}
                     />
                 </label>
-                <button disabled={breakLoading || !refined} style={{ ...styles.button, ...(breakLoading || !refined ? styles.buttonDisabled : {})}}>
-                    {breakLoading ? 'Generating...' : 'Generate Plan Options'}
+                <button disabled={breakdownStream.loading || !refined} style={{ ...styles.button, ...(breakdownStream.loading || !refined ? styles.buttonDisabled : {})}}>
+                    {breakdownStream.loading ? 'Generating...' : 'Generate Plan Options'}
                 </button>
             </form>
             {breakErr && <p style={{ ...styles.error }}>{breakErr}</p>}
 
+            {(breakdownStream.loading || breakdownStream.streaming) && (
+                <div style={styles.thinking}>
+                    <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 8, opacity: 0.7 }}>
+                        {breakdownStream.loading ? '🤖 AI is generating...' : '✅'}
+                    </div>
+                    {breakdownStream.streaming}
+                </div>
+            )}
             {plans && (
                 <section style={styles.section}>
                     <h2 style={{...styles.h2}}>Plan Options</h2>
@@ -286,9 +262,6 @@ export default function BreakdownPage() {
                             <ol>{plan.steps.map((step, stepIndex) => <li key={stepIndex}>{step.text}</li>)}</ol>
                         </div>
                     ))}
-
-                    {/* <h3 style={{...styles.h3}}>Raw JSON</h3>
-                    <Json data={plans} /> */}
                 </section>
             )}
 
@@ -306,12 +279,20 @@ export default function BreakdownPage() {
                                 style={{ ...styles.input }}
                             />
                         </label>
-                        <button disabled={selected === null || finalLoading} onClick={onFinalize} style={{ ...styles.button, ...(selected === null || finalLoading ? styles.buttonDisabled : {})}}>
-                            {finalLoading ? 'Finalizing...' : 'Finalize Plan'}
+                        <button disabled={selected === null || finalizeStream.loading} onClick={onFinalize} style={{ ...styles.button, ...(selected === null || finalizeStream.loading ? styles.buttonDisabled : {})}}>
+                            {finalizeStream.loading ? 'Finalizing...' : 'Finalize Plan'}
                         </button>
                     </div>
                     {finalErr && <p style={{ ...styles.error }}>{finalErr}</p>}
 
+                    {(finalizeStream.loading || finalizeStream.streaming) && (
+                        <div style={styles.thinking}>
+                            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 8, opacity: 0.7 }}>
+                                {finalizeStream.loading ? '🤖 AI is generating...' : '✅'}
+                            </div>
+                            {finalizeStream.streaming}
+                        </div>
+                    )}
                     {finalPlan && (
                         <section style={styles.section}>
                             <h3 style={{...styles.h3}}>Final Plan ({finalPlan.optionName})</h3>
@@ -325,8 +306,6 @@ export default function BreakdownPage() {
                                     </li>
                                 ))}
                             </ol>
-                            {/* <h4>Raw JSON</h4>
-                            <Json data={finalPlan} /> */}
                         </section>
                     )}
                 </section>
