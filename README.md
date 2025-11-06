@@ -7,7 +7,7 @@ Task-Orchestrator is a local-first app that turns vague ideas into clear, action
 
 ## Features
 
-- **Local Execution**: Runs fully offline using [Ollama](https://ollama.com) with models like Qwen2.5 or Mistral.  
+- **Local Execution**: Runs LLM ops fully offline using [Ollama](https://ollama.com). Currently model is defaulted to Qwen2.5.  
 - **Refinement Flow**: `/refine`, `/breakdown`, and `/plan` endpoints guide ideas from vague to actionable.  
 - **Monorepo Setup**: Unified schema between FastAPI and Next.js using shared types.  
 - **Optional Persistence**: Save and load plans locally via SQLite.  
