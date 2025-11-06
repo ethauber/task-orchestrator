@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import Literal, Optional
 
 from pydantic import (
     BaseModel, Field, field_validator, HttpUrl, model_validator
@@ -110,7 +110,7 @@ class RefineResponse(BaseModel):
         ],
         min_length=20, max_length=600
     )
-    questions: List[str] = Field(
+    questions: list[str] = Field(
         default_factory=list, max_length=3, min_length=0,
         description=(
             "Zero to three clarifying questions, each one sentence, only if truly needed "
@@ -140,7 +140,7 @@ class RefineResponse(BaseModel):
 
     @field_validator("questions")
     @classmethod
-    def trim_and_cap_each_question(cls, v: List[str]) -> List[str]:
+    def trim_and_cap_each_question(cls, v: list[str]) -> list[str]:
         # Keep each question tight
         trimmed = [q.strip() for q in v]
         for q in trimmed:
@@ -165,7 +165,7 @@ class PlanStep(BaseModel):
             "Cluster logged symptoms by trigger and time of day",
 
             # Plan my path
-            "List target AI platform roles and weekly learning blocks",
+            "list target AI platform roles and weekly learning blocks",
             "Schedule two certification study blocks this week"
         ],
     )
@@ -178,7 +178,7 @@ class PlanOption(BaseModel):
         description='Human-readable option name',
         examples=['Lean Plan', 'Thorough Plan']
     )
-    steps: List[PlanStep] = Field(
+    steps: list[PlanStep] = Field(
         ...,
         description='Ordered list of actionable steps',
         min_length=3, max_length=7
@@ -217,7 +217,7 @@ class BreakdownRequest(BaseModel):
 
 class BreakdownResponse(BaseModel):
     """Two alternative plans to choose from."""
-    plans: List[PlanOption] = Field(
+    plans: list[PlanOption] = Field(
         ...,
         description='Exactly two options. "Lean Plan" or "Thorough Plan"',
         min_length=2, max_length=2
@@ -230,7 +230,7 @@ class PlanRequest(BaseModel):
         ...,
         description='Human label of the selected option (e.g., \'Lean Plan\')'
     )
-    steps: List[PlanStep] = Field(
+    steps: list[PlanStep] = Field(
         ...,
         description='Ordered steps from the selected option',
         min_length=3, max_length=12,
@@ -255,7 +255,7 @@ class FinalStep(BaseModel):
         description='Whole minutes. Multiples of 15',
         examples=[15, 30, 45, 60]
     )
-    depends_on: Optional[List[int]] = Field(
+    depends_on: Optional[list[int]] = Field(
         default=None,
         description='Optional 1-based indicies of prerequisite steps',
         examples=[[1], [2, 3]]
@@ -290,7 +290,7 @@ class FinalStep(BaseModel):
 class PlanResponse(BaseModel):
     """Final plan that fits constraints. Overflow steps are parked"""
     optionName: str = Field(..., examples=['Lean Plan'])
-    steps: List[FinalStep] = Field(
+    steps: list[FinalStep] = Field(
         ..., description='Steps in execution order with durations and deps'
     )
     total_duration: int = Field(
@@ -298,8 +298,8 @@ class PlanResponse(BaseModel):
         description='Sum of non-parked durations (minutes).',
         examples=[90, 180]
     )
-    parked_indices: List[int] = Field(
-        default_factory=List,
+    parked_indices: list[int] = Field(
+        default_factory=list,
         description='1-based indices of steps parked due to constraints',
         examples=[[5, 6]]
     )
