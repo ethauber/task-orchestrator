@@ -22,8 +22,8 @@ def _context_block(context: str | None) -> str:
 
 
 prompt = ChatPromptTemplate.from_messages([
-    ("system", prompts_['refine.json']),
-    ("human", prompts_['human.json'])
+    ("system", prompts_['system']),
+    ("human", prompts_['human'])
 ])
 
 chain = (
