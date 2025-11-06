@@ -30,44 +30,69 @@ app.add_middleware(
 )
 
 
+def _sse_format(type_, data_):
+    result = f"data: {json.dumps({'type': type_, 'data': data_})}\n\n"
+    print(f'result: {result}')
+    return result
+
+
 async def stream_json_response(chain, input_data: dict) -> AsyncGenerator[str, None]:
     """
     Stream LangChain output as SSE
     Accumulates chuns into valid JSON at the end
     """
     content_buffer = ""
+    final_object = None
     try:
         async for chunk in chain.astream(input_data):
+            print(f'chunk is {chunk} with type {type(chunk)}')
+            if isinstance(chunk, dict):
+                final_object = chunk
+                break
+
             if hasattr(chunk, 'content'):
                 text = chunk.content
             elif isinstance(chunk, str):
                 text = chunk
             else:
-                text = str(chunk)
+                continue  # ignore for now internal langchain step toks
 
             content_buffer += text
+            yield _sse_format('content', text)
 
-            yield f"data: {json.dumps({'type': 'content', 'data': text})}\n\n"
-
-        try:
-            print(f'Non CLEANED {content_buffer}')
-            clean = content_buffer.replace('```json', '').replace('```', '').strip()
-            print(f'CLEANED {clean}')
-            final = json.loads(clean)
-            yield f"data: {json.dumps({'type': 'done', 'data': final})}\n\n"
-        except json.JSONDecodeError:
-            yield f"data: {json.dumps({'type': 'done', 'data': content_buffer})}\n\n"
+        if final_object:
+            yield _sse_format('done', final_object)
+        else:
+            try:
+                print(f'Non CLEANED {content_buffer}')
+                clean = content_buffer.replace('```json', '').replace('```', '').strip()
+                print(f'CLEANED {clean}')
+                final = json.loads(clean)
+                yield _sse_format('done', final)
+            except json.JSONDecodeError:
+                yield _sse_format('type', content_buffer)
     except Exception as catchall_exception:
-        yield f"data: {json.dumps({'type': 'error', 'data': str(catchall_exception)})}"
-        "\n\n"
+        yield _sse_format('error', str(catchall_exception))
+
+
+async def event_stream(chain, payload) -> AsyncGenerator[str, None]:
+    buffer = ''
+    async for event in chain.astream_events(payload):
+        # print(f'event : {event}')
+        if event['event'] == 'on_chat_model_stream':
+            # print(f"{event['data']['chunk'].content}\n")
+            chunk = event['data']['chunk']
+            print(f'chunk.content {chunk.content}')
+            buffer += chunk.content
+            yield _sse_format('thinking', chunk.content)
+    yield _sse_format('done', json.loads(buffer))
 
 
 @app.post('/stream/refine')
 async def stream_refine(request: RefineRequest):
     """Streaming refine using existing LangChain setup"""
-    return StreamingResponse(stream_json_response(
-        refine_chain, {'idea': request.idea, 'context': request.context})
-    )
+    payload = {'idea': request.idea, 'context': request.context}
+    return StreamingResponse(event_stream(refine_chain, payload))
 
 
 @app.get("/health", response_model=Health)

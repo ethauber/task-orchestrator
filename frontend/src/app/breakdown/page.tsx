@@ -6,7 +6,7 @@ import type {
     BreakdownResponse,
     PlanResponse
 } from '@/lib/types';
-import { postJSON } from '@/lib/api';
+import { postJSON, streamPost, useStreamingAction } from '@/lib/api';
 import { Json } from '@/components/Json';
 
 import useSystemDarkMode from './systemAppearance';
@@ -14,10 +14,9 @@ import useSystemDarkMode from './systemAppearance';
 
 export default function BreakdownPage() {
     // Step 1: refine
-    // 'Create a 10 minute outline by consolidating notes'
+    // example 'Create a 10 minute outline by consolidating notes'
     const [idea, setIdea] = useState<string>('');
-    const [refineLoading, setRefineLoading] = useState(false);
-    const [refineErr, setRefineErr] = useState<string>('');
+    // const [refineLoading, setRefineLoading] = useState(false);
     const [refined, setRefined] = useState<RefineResponse | null>(null);
     const [answers, setAnswers] = useState<string[]>([]);
 
@@ -36,25 +35,35 @@ export default function BreakdownPage() {
     //
     const isDarkMode = useSystemDarkMode();
 
-    // start handlers
+    const refineStream = useStreamingAction();
+    const breakdownStream = useStreamingAction();
+    const finalizeStream = useStreamingAction()
+
     async function onRefine(e: ReactFormEvent) {
         e.preventDefault();
-        setRefineErr('');
+        refineStream.setError('');
         setRefined(null);
         setPlans(null);
         setSelected(null);
         setFinalPlan(null);
         setAnswers([]);
-        try {
-            setRefineLoading(true);
-            const json = await postJSON<RefineResponse>('/refine', { idea });
-            setRefined(json);
-            setAnswers(new Array(json.questions.length).fill(''));
-        } catch (error: any) {
-            setRefineErr(String(error));
-        } finally {
-            setRefineLoading(false);
-        }
+
+        // try {
+        //     setRefineLoading(true);
+        //     const json = await postJSON<RefineResponse>('/refine', { idea });
+        //     setRefined(json);
+        //     setAnswers(new Array(json.questions.length).fill(''));
+        // } catch (error: any) {
+        //     setRefineErr(String(error));
+        // } finally {
+        //     setRefineLoading(false);
+        // }
+        const result = await refineStream.run<RefineResponse>('/stream/refine', { idea });
+
+        if (!result) return;
+
+        setRefined(result);
+        // setAnswers(new Array(result.questions.length).fill(""));
     }
 
     async function onBreakdown(e: ReactFormEvent) {
@@ -169,6 +178,17 @@ export default function BreakdownPage() {
         h1: { fontSize: 28, fontWeight: 600, marginBottom: 24, color: colors.textPrimary },
         h2: { fontSize: 20, fontWeight: 600, marginTop: 24, marginBottom: 16, color: colors.textPrimary },
         h3: { fontSize: 16, fontWeight: 600, marginTop: 16, marginBottom: 12, color: colors.textSecondary },
+        thinking: {
+            marginTop: 12, padding: 12, 
+            backgroundColor: isDarkMode ? '#1a2a3a' : '#e3f2fd',
+            border: `1px solid ${isDarkMode ? '#2a4a6a' : '#90caf9'}`,
+            borderRadius: 6,
+            fontSize: 13,
+            fontFamily: 'monospace',
+            color: isDarkMode ? '#90caf9' : '#1565c0',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word'
+        },
     };
     // end styling
 
@@ -185,12 +205,20 @@ export default function BreakdownPage() {
                         style={{...styles.textarea}}
                     />
                 </label>
-                <button disabled={refineLoading || idea.length < 10} style={{ ...styles.button, ...(refineLoading || idea.length < 10 ? styles.buttonDisabled : {})}}>
-                    {refineLoading ? 'Refining...' : 'Refine Idea'}
+                <button disabled={refineStream.loading || idea.length < 10} style={{ ...styles.button, ...(refineStream.loading || idea.length < 10 ? styles.buttonDisabled : {})}}>
+                    {refineStream.loading ? 'Refining...' : 'Refine Idea'}
                 </button>
             </form>
-            {refineErr && <p style={{ ...styles.error }}>{refineErr}</p>}
+            {refineStream.error && <p style={{ ...styles.error }}>{refineStream.error}</p>}
 
+            {refineStream.streaming && (
+                <div style={styles.thinking}>
+                    <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 8, opacity: 0.7 }}>
+                        🤔 AI is thinking...
+                    </div>
+                    {refineStream.streaming}
+                </div>
+            )}
             {refined && (
                 <section style={styles.section}>
                     <h3 style={{...styles.h3}}>Refined Idea</h3>
@@ -219,8 +247,6 @@ export default function BreakdownPage() {
                             </ol>
                         </>
                     )}
-                    {/* <h4>Refine JSON</h4>
-                    <Json data={refined}/> */}
                 </section>
             )}
 
