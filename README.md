@@ -1,3 +1,6 @@
+
+![anim-50pct-64c](https://github.com/user-attachments/assets/b491d048-a898-4ed7-818f-103cf544eea1)
+
 # Task-Orchestrator
 
 Task-Orchestrator is a local-first app that turns vague ideas into clear, actionable plans using a FastAPI backend and a Next.js frontend. It refines goals, breaks them into tasks, and generates step-by-step strategies entirely on your machine.
