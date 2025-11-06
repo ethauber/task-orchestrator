@@ -1,7 +1,12 @@
+# builtin
+import json
+from typing import AsyncGenerator
+# third
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import HttpUrl
-
+# local
 from backend import (
     ollama_client, settings
 )
@@ -10,7 +15,7 @@ from backend.schemas import (
     BreakdownRequest, BreakdownResponse, PlanRequest,
     PlanResponse
 )
-from backend.llm.refine import refine_with_lang
+from backend.llm.refine import refine_with_lang, chain as refine_chain
 from backend.llm.breakdown import breakdown_with_lc
 from backend.llm.plan import plan_with_lc
 
@@ -23,6 +28,46 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+async def stream_json_response(chain, input_data: dict) -> AsyncGenerator[str, None]:
+    """
+    Stream LangChain output as SSE
+    Accumulates chuns into valid JSON at the end
+    """
+    content_buffer = ""
+    try:
+        async for chunk in chain.astream(input_data):
+            if hasattr(chunk, 'content'):
+                text = chunk.content
+            elif isinstance(chunk, str):
+                text = chunk
+            else:
+                text = str(chunk)
+
+            content_buffer += text
+
+            yield f"data: {json.dumps({'type': 'content', 'data': text})}\n\n"
+
+        try:
+            print(f'Non CLEANED {content_buffer}')
+            clean = content_buffer.replace('```json', '').replace('```', '').strip()
+            print(f'CLEANED {clean}')
+            final = json.loads(clean)
+            yield f"data: {json.dumps({'type': 'done', 'data': final})}\n\n"
+        except json.JSONDecodeError:
+            yield f"data: {json.dumps({'type': 'done', 'data': content_buffer})}\n\n"
+    except Exception as catchall_exception:
+        yield f"data: {json.dumps({'type': 'error', 'data': str(catchall_exception)})}"
+        "\n\n"
+
+
+@app.post('/stream/refine')
+async def stream_refine(request: RefineRequest):
+    """Streaming refine using existing LangChain setup"""
+    return StreamingResponse(stream_json_response(
+        refine_chain, {'idea': request.idea, 'context': request.context})
+    )
 
 
 @app.get("/health", response_model=Health)
