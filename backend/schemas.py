@@ -43,7 +43,7 @@ class RefineRequest(BaseModel):
             'Plan my path',
         ],
         min_length=5,  # Avoids throwaway words like 'hi' or 'help'
-        max_length=255  # Keep idea short. Details go into context instead
+        max_length=9999999999  # Keep idea short. Details go into context instead
     )
     context: Optional[str] = Field(
         default=None,
