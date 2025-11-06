@@ -86,8 +86,8 @@ Then open [http://localhost:3000](http://localhost:3000) to use the app.
 | Endpoint | Description | Status |
 |-----------|--------------|---|
 | `/refine` | Clarifies vague ideas and asks follow-up questions | ⚙️ Minimal ready |
-| `/breakdown` | Breaks refined ideas into actionable tasks | 🚧 In progress |
-| `/plan` | Converts tasks into a sequenced plan with timing hints | 🚧 In progress |
+| `/breakdown` | Breaks refined ideas into actionable tasks |  ⚙️ Minimal ready |
+| `/plan` | Converts tasks into a sequenced plan with timing hints |  ⚙️ Minimal ready |
 
 ## Example Flow
 
