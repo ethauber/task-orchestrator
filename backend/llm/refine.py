@@ -1,20 +1,10 @@
-import os
-
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
-from langchain_ollama import ChatOllama
 
+from backend.llm import base_chat_llm
 from backend.schemas import RefineRequest, RefineResponse
 
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-MODEL_NAME = os.getenv("MODEL_NAME", "qwen2.5:7b")
-
-llm = ChatOllama(
-    model=MODEL_NAME,
-    base_url=OLLAMA_BASE_URL,
-    temperature=0.114942  # Kepler-Bouwkamp
-)
 
 SYSTEM = (
     "You help clients turn vague ideas into a concreate 'refinedIdea' and up to three"
@@ -47,7 +37,7 @@ chain = (
         format_instructions=lambda _: parser.get_format_instructions()
     )
     | prompt
-    | llm
+    | base_chat_llm
     | parser
 )
 
