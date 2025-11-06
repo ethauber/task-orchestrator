@@ -70,10 +70,15 @@ def breakdown(req: BreakdownRequest):
         out = breakdown_with_lc(req)
         for p in out.plans:
             p.name = (p.name or '').strip() or 'Plan'
-            p.steps = [s for s in p.steps if s.text.strip()][: min(len(p.steps), req.max_steps or 7)]
+            p.steps = [
+                s for s in p.steps if s.text.strip()][: min(
+                    len(p.steps), req.max_steps or 7)
+            ]
             return out
     except Exception as general_exception:
-        raise HTTPException(status_code=502, detail=f'breakdown failed with\n{general_exception}')
+        raise HTTPException(
+            status_code=502, detail=f'breakdown failed with\n{general_exception}'
+        )
 
 
 @app.post('/plan', response_model=PlanResponse)
@@ -89,4 +94,6 @@ def plan(req: PlanRequest):
         out.total_duration = sum(s.duration_minutes for s in out.steps if not s.parked)
         return out
     except Exception as general_exception:
-        raise HTTPException(status_code=502, detail=f'plan failed with\n{general_exception}')
+        raise HTTPException(
+            status_code=502, detail=f'plan failed with\n{general_exception}'
+        )
