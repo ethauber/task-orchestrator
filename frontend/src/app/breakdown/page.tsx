@@ -190,7 +190,12 @@ export default function BreakdownPage() {
             {refined && (
                 <section style={styles.section}>
                     <h3 style={{...styles.h3}}>Refined Idea</h3>
-                    <p>{refined.refinedIdea}</p>
+                    <textarea
+                        rows={3}
+                        style={styles.textarea}
+                        value={refined.refinedIdea}
+                        onChange={(e) => setRefined({ ...refined, refinedIdea: e.target.value })}
+                    />
 
                     {refined.questions.length > 0 && (
                         <>
