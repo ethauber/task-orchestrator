@@ -1,11 +1,14 @@
 # builtin
+from contextlib import asynccontextmanager
 import json
 from typing import AsyncGenerator
 # third
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import HttpUrl
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 # local
 from backend import (
     ollama_client, settings
@@ -18,9 +21,21 @@ from backend.schemas import (
 from backend.llm.refine import refine_with_lang, chain as refine_chain
 from backend.llm.breakdown import breakdown_with_lc, chain as breakdown_chain
 from backend.llm.plan import plan_with_lc, chain as plan_chain
+from backend.db import engine, Base, get_db, IdeaBase
 
 
-app = FastAPI(title="task-orchestrator-backend", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    await engine.dispose()
+
+
+app = FastAPI(
+    title="task-orchestrator-backend", version="0.1.0",
+    lifespan=lifespan
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
@@ -156,3 +171,38 @@ def plan(req: PlanRequest):
         raise HTTPException(
             status_code=502, detail=f'plan failed with\n{general_exception}'
         )
+
+
+@app.post("/test-db")
+async def test_db_connection(
+    request: RefineRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Simple endpoint to verify DB writes and reads.
+    """
+    new_idea = IdeaBase(
+        initial=request.idea,
+        refined=f"Processed: {request.idea}",
+        steps="[]"
+    )
+
+    db.add(new_idea)
+    await db.commit()
+    await db.refresh(new_idea)
+
+    result = await db.execute(select(IdeaBase).where(IdeaBase.id == new_idea.id))
+    saved_idea = result.scalar_one_or_none()
+    if not saved_idea:
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve the saved idea from DB."
+        )
+
+    return {
+        "status": "success",
+        "db_record": {
+            "id": saved_idea.id,
+            "initial": saved_idea.initial,
+            "created_at": saved_idea.created_at
+        }
+    }
