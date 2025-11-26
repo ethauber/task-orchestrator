@@ -58,21 +58,35 @@ async def event_stream(chain, payload) -> AsyncGenerator[str, None]:
     Create compat func for langchain events to SSE streamable
     """
     buffer = ''
+    done_sent = False
+
     try:
-        async for event in chain.astream_events(payload):
-            # print(f'event : {event}')
-            if event['event'] == 'on_chat_model_stream':
+        async for event in chain.astream_events(payload, version='v2'):
+            kind = event['event']
+
+            if kind == 'on_chat_model_stream':
                 # print(f"{event['data']['chunk'].content}\n")
                 chunk = event['data']['chunk']
-                buffer += chunk.content
-                yield _sse_format('thinking', chunk.content)
+                if chunk.content:
+                    buffer += chunk.content
+                    yield _sse_format('thinking', chunk.content)
+            elif kind == 'on_chain_end' and event['name'] == 'RunnableSequence':
+                final_output = event['data'].get('output')
+                if final_output:
+                    data_dict = final_output.dict() if hasattr(
+                        final_output, 'dict') else final_output.model_dump()
+                    print('Yielding final output from chain end... done \n\n\n\n')
+                    yield _sse_format('done', data_dict)
+                    done_sent = True
 
-        try:
-            clean = buffer.replace('```json', '').replace('```', '').strip()
-            yield _sse_format('done', json.loads(clean))
-        except json.JSONDecodeError:
-            yield _sse_format('type', buffer)
+        if not done_sent:
+            try:
+                clean = buffer.replace('```json', '').replace('```', '').strip()
+                yield _sse_format('done', json.loads(clean))
+            except json.JSONDecodeError:
+                yield _sse_format('type', buffer)
     except Exception as catchall_e:
+        print(f'Caught exception in event_stream: {catchall_e}')
         yield _sse_format('error', str(catchall_e))
 
 
@@ -158,14 +172,9 @@ def breakdown(req: BreakdownRequest):
 
 
 @app.post('/plan', response_model=PlanResponse)
-def plan(req: PlanRequest):
+async def plan(req: PlanRequest):
     try:
         out = plan_with_lc(req)
-        # until tool calling is implemented force 15 min multiples old fashioned way
-        for s in out.steps:
-            q = int(round(s.duration_minutes / 15.0)) * 15
-            s.duration_minutes = 15 if q < 15 else q
-
         out.parked_indices = [i + 1 for i, s in enumerate(out.steps) if s.parked]
         out.total_duration = sum(s.duration_minutes for s in out.steps if not s.parked)
         return out
