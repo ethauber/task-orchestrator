@@ -1,6 +1,7 @@
 # builtin
 from contextlib import asynccontextmanager
 import json
+import traceback
 from typing import AsyncGenerator
 # third
 from fastapi import Depends, FastAPI, HTTPException
@@ -93,7 +94,10 @@ async def event_stream(chain, payload) -> AsyncGenerator[str, None]:
             except json.JSONDecodeError:
                 yield _sse_format('type', buffer)
     except Exception as catchall_e:
-        print(f'Caught exception in event_stream: {catchall_e}')
+        print("\n\n=== STREAM ERROR TRACEBACK ===")
+        traceback.print_exc()
+        print("==============================\n")
+        print(f'Stream error: {str(catchall_e)}')
         yield _sse_format('error', str(catchall_e))
 
 
