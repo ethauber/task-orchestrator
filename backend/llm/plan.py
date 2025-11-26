@@ -1,73 +1,96 @@
-from langchain_core.messages import HumanMessage
-from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import (
-    RunnableLambda, RunnableParallel, RunnablePassthrough
-)
+from typing import List, TypedDict
+
+from langchain_core.messages import SystemMessage, HumanMessage
+from langgraph.graph import StateGraph, END
 
 from backend.llm import base_chat_llm, math_llm, load_prompts
 from backend.llm.tools import normalize_duration
-from backend.schemas import PlanRequest, PlanResponse, PlanStep
+from backend.schemas import PlanRequest, PlanResponse
 
 
-parser = PydanticOutputParser(pydantic_object=PlanResponse)
-
-prompts_ = load_prompts('plan.json')
-
-prompt = ChatPromptTemplate.from_messages([
-    ('system', prompts_['system']),
-    ('human', prompts_['human'])
-])
-
-
-def _steps_block(steps: list[PlanStep]) -> str:
-    return '\n'.join(f'{i+1}. {s.text}' for i, s in enumerate(steps))
+# State Definition required for planning pattern
+class PlanState(TypedDict):
+    optionName: str
+    steps: List[dict]
+    total_minutes: int
+    draft_plan: PlanResponse | None
+    iteration: int
 
 
-def _apply_tool_math(plan: PlanResponse) -> PlanResponse:
-    """
-    Receives the drafted plan, batch-sends all durations to the
-    Tool-Bound LLM, executes the tools, and updates the plan.
-    """
-    print('Applying tool-based math normalization to plan durations...')
-    batch_prompts: list = [
-        [HumanMessage(content=f"Normalize a duration of {step.duration_minutes} minutes.")]
-        for step in plan.steps
+prompts_ = load_prompts("plan.json")
+
+
+# Nodes
+async def draft_node(state: PlanState):
+    steps_text = "\n".join(
+        f'{i+1}. {s.get("text", "")}' for i, s in enumerate(state["steps"])
+    )
+
+    messages = [
+        SystemMessage(content=prompts_["system"]),
+        HumanMessage(
+            content=prompts_["human"].format(
+                optionName=state["optionName"],
+                steps_block=steps_text,
+                total_minutes=state["total_minutes"],
+            )
+        ),
     ]
 
-    results = math_llm.batch(batch_prompts)
+    structured_llm = base_chat_llm.with_structured_output(PlanResponse)
+    response = await structured_llm.ainvoke(messages)
 
-    for i, (step, response) in enumerate(zip(plan.steps, results)):
+    return {"draft_plan": response, "iteration": state.get("iteration", 0) + 1}
+
+
+async def optimize_node(state: PlanState):
+    current_plan = state["draft_plan"]
+    if not current_plan:
+        return {}
+
+    batch_prompts = [
+        [
+            HumanMessage(
+                content=f"Normalize a duration of {step.duration_minutes} minutes."
+            )
+        ]
+        for step in current_plan.steps
+    ]
+
+    results = await math_llm.abatch(batch_prompts)
+
+    updated_steps = []
+    for step, response in zip(current_plan.steps, results):
         if response.tool_calls:
             call = response.tool_calls[0]
-            old_val = step.duration_minutes
+            new_val = normalize_duration.invoke(call["args"])
+            step.duration_minutes = new_val
+        updated_steps.append(step)
 
-            step.duration_minutes = normalize_duration.invoke(call['args'])
-            print(f'[Step {i}] Tool Used: {old_val} -> {step.duration_minutes}')
-        else:
-            print(f'[Step {i}] MISSED TOOL. LLM raw response: {response}')
-
-    return plan
+    current_plan.steps = updated_steps
+    return {"draft_plan": current_plan}
 
 
-chain = (
-    RunnableParallel(
-        optionName=RunnablePassthrough(),
-        steps_block=lambda x: _steps_block(x['steps']),
-        total_minutes=lambda x: x.get('total_minutes'),
-        format_instructions=lambda _: parser.get_format_instructions()
-    )
-    | prompt
-    | base_chat_llm
-    | parser
-    | RunnableLambda(_apply_tool_math)
-)
+# Create the state graph
+workflow = StateGraph(PlanState)
+workflow.add_node("drafter", draft_node)
+workflow.add_node("optimizer", optimize_node)
+
+workflow.set_entry_point("drafter")
+workflow.add_edge("drafter", "optimizer")
+workflow.add_edge("optimizer", END)
+
+plan_graph = workflow.compile()
 
 
-def plan_with_lc(req: PlanRequest) -> PlanResponse:
-    print('Planning with LangChain plan_with_lc...')
-    return chain.invoke({
-        'optionName': req.optionName,
-        'steps': req.steps,
-        'total_minutes': req.total_minutes
-    })
+async def plan_with_lc(req: PlanRequest) -> PlanResponse:
+    """Helper to run the plan graph in a non-streaming way"""
+    initial_state = {
+        "optionName": req.optionName,
+        "steps": req.steps,
+        "total_minutes": req.total_minutes,
+        "iteration": 0,
+        "draft_plan": None,
+    }
+    final_state = await plan_graph.ainvoke(initial_state)
+    return final_state["draft_plan"]

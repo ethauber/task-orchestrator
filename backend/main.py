@@ -22,7 +22,7 @@ from backend.llm import math_llm
 from backend.llm.tools import normalize_duration
 from backend.llm.refine import refine_with_lang, chain as refine_chain
 from backend.llm.breakdown import breakdown_with_lc, chain as breakdown_chain
-from backend.llm.plan import plan_with_lc, chain as plan_chain
+from backend.llm.plan import plan_with_lc, plan_graph
 from backend.db import engine, Base, get_db, IdeaBase
 
 
@@ -73,9 +73,16 @@ async def event_stream(chain, payload) -> AsyncGenerator[str, None]:
             elif kind == 'on_chain_end' and event['name'] == 'RunnableSequence':
                 final_output = event['data'].get('output')
                 if final_output:
-                    data_dict = final_output.dict() if hasattr(
-                        final_output, 'dict') else final_output.model_dump()
+                    data_dict = final_output.model_dump()
                     print('Yielding final output from chain end... done \n\n\n\n')
+                    yield _sse_format('done', data_dict)
+                    done_sent = True
+            elif kind == 'on_chain_end' and event['name'] == 'LangGraph':
+                final_output = event['data'].get('output')
+                if final_output and 'draft_plan' in final_output:
+                    plan_obj = final_output['draft_plan']
+                    data_dict = plan_obj.model_dump()
+                    print('Yielding final output from graph end... done \n\n\n\n')
                     yield _sse_format('done', data_dict)
                     done_sent = True
 
@@ -108,10 +115,14 @@ async def stream_breakdown(request: BreakdownRequest):
 @app.post('/stream/plan')
 async def stream_plan(request: PlanRequest):
     """Stream plan with existing lang setup"""
-    return StreamingResponse(event_stream(plan_chain, {
+    steps_as_dicts = [s.model_dump() for s in request.steps]
+
+    return StreamingResponse(event_stream(plan_graph, {
         'optionName': request.optionName,
-        'steps': request.steps,
-        'total_minutes': request.total_minutes
+        'steps': steps_as_dicts,
+        'total_minutes': request.total_minutes,
+        'iteration': 0,
+        'draft_plan': None
     }))
 
 
@@ -174,9 +185,11 @@ def breakdown(req: BreakdownRequest):
 @app.post('/plan', response_model=PlanResponse)
 async def plan(req: PlanRequest):
     try:
-        out = plan_with_lc(req)
-        out.parked_indices = [i + 1 for i, s in enumerate(out.steps) if s.parked]
-        out.total_duration = sum(s.duration_minutes for s in out.steps if not s.parked)
+        out = await plan_with_lc(req)
+        if out:
+            out.parked_indices = [i + 1 for i, s in enumerate(out.steps) if s.parked]
+            out.total_duration = sum(
+                s.duration_minutes for s in out.steps if not s.parked)
         return out
     except Exception as general_exception:
         raise HTTPException(
