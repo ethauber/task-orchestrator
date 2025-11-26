@@ -18,6 +18,8 @@ from backend.schemas import (
     BreakdownRequest, BreakdownResponse, PlanRequest,
     PlanResponse
 )
+from backend.llm import math_llm
+from backend.llm.tools import normalize_duration
 from backend.llm.refine import refine_with_lang, chain as refine_chain
 from backend.llm.breakdown import breakdown_with_lc, chain as breakdown_chain
 from backend.llm.plan import plan_with_lc, chain as plan_chain
@@ -205,4 +207,34 @@ async def test_db_connection(
             "initial": saved_idea.initial,
             "created_at": saved_idea.created_at
         }
+    }
+
+
+@app.post("/tools/test-math")
+async def test_tool_binding(raw_minutes: int):
+    """
+    Tests if the existing LLM instance can correctly bind and call
+    the normalize_duration tool.
+    """
+    msg = f"Normalize a duration of {raw_minutes} minutes."
+    response = await math_llm.ainvoke(msg)
+
+    if response.tool_calls:
+        tool_call = response.tool_calls[0]  # Grab the first tool decision
+        tool_args = tool_call['args']       # e.g., {'minutes': 23}
+
+        # Invoke the python function using the args the LLM gave us
+        result = normalize_duration.invoke(tool_args)
+
+        return {
+            "status": "success",
+            "original_input": raw_minutes,
+            "tool_selected": tool_call['name'],
+            "llm_generated_args": tool_args,
+            "final_result": result
+        }
+
+    return {
+        "status": "missed_tool_call",
+        "llm_response": response.content
     }
