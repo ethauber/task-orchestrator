@@ -96,6 +96,47 @@ Then open [http://localhost:3000](http://localhost:3000) to use the app.
 3. `/breakdown` → returns actionable task list  
 4. `/plan` → returns ordered execution plan
 
+## MCP Server
+
+This project exposes its functionality via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), allowing AI assistants (like Claude Desktop) to interact with the task orchestrator directly.
+
+### 1. Identify your Virtual Environment Path
+External tools often don't have the same `PATH` as your terminal, so `poetry` might not be found. It is most robust to use the absolute path to the Python executable in your virtual environment.
+
+Run this command to find your environment path:
+```bash
+poetry env info --path
+```
+*Example output: `/Users/username/Library/Caches/pypoetry/virtualenvs/task-orchestrator-XXXXXX-py3.11`*
+
+Append `/bin/python` to this path to get your executable.
+
+### 2. Configure Claude Desktop
+
+Add the following to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "task-orchestrator": {
+      "command": "/ABSOLUTE/PATH/TO/VIRTUALENV/bin/python",
+      "args": ["/ABSOLUTE/PATH/TO/task-orchestrator/mcp_entry.py"],
+      "cwd": "/ABSOLUTE/PATH/TO/task-orchestrator"
+    }
+  }
+}
+```
+
+*   **command**: The full path you found in Step 1 (ending in `/bin/python`).
+*   **args**: The **absolute path** to the `mcp_entry.py` file in your project root.
+*   **cwd**: The full path to where you cloned this repository.
+
+### Manual Run (Testing)
+You can still run it manually in your terminal if needed:
+```bash
+poetry run python mcp_entry.py
+```
+
 ---
 
 Built for local idea refinement and planning without relying on the cloud. Also, most clouds do not do this readily currently
