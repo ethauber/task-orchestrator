@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { PlanSaveRequest, PlanSummary, FullPlanResponse, PlanResponse } from './types';
 
 export const API =
     (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '');
@@ -21,6 +22,22 @@ export async function postJSON<T>(path: string, body: unknown): Promise<T> {
     }
     return r.json();
 }
+
+export async function savePlan(planData: PlanResponse): Promise<number> {
+    const response = await postJSON<number>('/plans', { plan_data: planData });
+    return response;
+}
+
+export async function listPlans(): Promise<PlanSummary[]> {
+    const response = await getJSON<PlanSummary[]>('/plans');
+    return response;
+}
+
+export async function getPlan(planId: number): Promise<FullPlanResponse> {
+    const response = await getJSON<FullPlanResponse>(`/plans/${planId}`);
+    return response;
+}
+
 
 export async function streamPost<T>(
     path: string,
@@ -66,36 +83,36 @@ export async function streamPost<T>(
 }
 
 export function useStreamingAction() {
-  const [streaming, setStreaming] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+    const [streaming, setStreaming] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-  const run = useCallback(
-    async <T,>(path: string, body: any): Promise<T | null> => {
-      setError("");
-      setStreaming("");
-      setLoading(true);
+    const run = useCallback(
+        async <T,>(path: string, body: any): Promise<T | null> => {
+            setError("");
+            setStreaming("");
+            setLoading(true);
 
-      try {
-        const result = await streamPost<T>(
-          path, body,
-          (text) => setStreaming((prev) => prev + text)
-        );
-        return result;
-      } catch (err: any) {
-        setError(String(err));
-        return null;
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+            try {
+                const result = await streamPost<T>(
+                    path, body,
+                    (text) => setStreaming((prev) => prev + text)
+                );
+                return result;
+            } catch (err: any) {
+                setError(String(err));
+                return null;
+            } finally {
+                setLoading(false);
+            }
+        },
+        []
+    );
 
-  return {
-    streaming, loading, error,
-    run,
-    setError,      // for manual overrides
-    setStreaming,  // optional
-  };
+    return {
+        streaming, loading, error,
+        run,
+        setError,      // for manual overrides
+        setStreaming,  // optional
+    };
 }
