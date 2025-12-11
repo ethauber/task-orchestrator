@@ -2,7 +2,10 @@ from typing import AsyncGenerator
 
 from sqlalchemy import Column, String, Integer, DateTime
 from sqlalchemy.ext.asyncio import (
-    create_async_engine, AsyncEngine, AsyncSession, async_sessionmaker
+    create_async_engine,
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
 )
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
@@ -16,22 +19,19 @@ class IdeaBase(Base):
     __tablename__ = "ideas"
 
     id = Column(Integer, primary_key=True, index=True)
-    initial = Column(String, index=True)
-    refined = Column(String, index=True)
-    steps = Column(String, index=True)
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    initial = Column(String, index=True, nullable=True)
+    refined = Column(String, index=True, nullable=True)
+    option_name = Column(String, nullable=True)
+    total_duration = Column(Integer, nullable=True)
+    full_plan_json = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
 
 async def get_sessionmaker():
-    return async_sessionmaker(
-        bind=engine, class_=AsyncSession, expire_on_commit=False
-    )
+    return async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import json
 import traceback
 from typing import AsyncGenerator
+
 # third
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
@@ -10,14 +11,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+
 # local
-from backend import (
-    ollama_client, settings
-)
+from backend import ollama_client, settings
 from backend.schemas import (
-    Health, PingResponse, RefineRequest, RefineResponse,
-    BreakdownRequest, BreakdownResponse, PlanRequest,
-    PlanResponse
+    Health,
+    PingResponse,
+    RefineRequest,
+    RefineResponse,
+    BreakdownRequest,
+    BreakdownResponse,
+    PlanRequest,
+    PlanResponse,
+    PlanSaveRequest,
+    PlanSummary,
+    FullPlanResponse,
 )
 from backend.llm import math_llm
 from backend.llm.tools import normalize_duration
@@ -35,10 +43,7 @@ async def lifespan(app: FastAPI):
     await engine.dispose()
 
 
-app = FastAPI(
-    title="task-orchestrator-backend", version="0.1.0",
-    lifespan=lifespan
-)
+app = FastAPI(title="task-orchestrator-backend", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
@@ -58,83 +63,92 @@ async def event_stream(chain, payload) -> AsyncGenerator[str, None]:
     """
     Create compat func for langchain events to SSE streamable
     """
-    buffer = ''
+    buffer = ""
     done_sent = False
 
     try:
-        async for event in chain.astream_events(payload, version='v2'):
-            kind = event['event']
+        async for event in chain.astream_events(payload, version="v2"):
+            kind = event["event"]
 
-            if kind == 'on_chat_model_stream':
+            if kind == "on_chat_model_stream":
                 # print(f"{event['data']['chunk'].content}\n")
-                chunk = event['data']['chunk']
+                chunk = event["data"]["chunk"]
                 if chunk.content:
                     buffer += chunk.content
-                    yield _sse_format('thinking', chunk.content)
-            elif kind == 'on_chain_end' and event['name'] == 'RunnableSequence':
-                final_output = event['data'].get('output')
+                    yield _sse_format("thinking", chunk.content)
+            elif kind == "on_chain_end" and event["name"] == "RunnableSequence":
+                final_output = event["data"].get("output")
                 if final_output:
                     data_dict = final_output.model_dump()
-                    print('Yielding final output from chain end... done \n\n\n\n')
-                    yield _sse_format('done', data_dict)
+                    print("Yielding final output from chain end... done \n\n\n\n")
+                    yield _sse_format("done", data_dict)
                     done_sent = True
-            elif kind == 'on_chain_end' and event['name'] == 'LangGraph':
-                final_output = event['data'].get('output')
-                if final_output and 'draft_plan' in final_output:
-                    plan_obj = final_output['draft_plan']
+            elif kind == "on_chain_end" and event["name"] == "LangGraph":
+                final_output = event["data"].get("output")
+                if final_output and "draft_plan" in final_output:
+                    plan_obj = final_output["draft_plan"]
                     data_dict = plan_obj.model_dump()
-                    print('Yielding final output from graph end... done \n\n\n\n')
-                    yield _sse_format('done', data_dict)
+                    print("Yielding final output from graph end... done \n\n\n\n")
+                    yield _sse_format("done", data_dict)
                     done_sent = True
 
         if not done_sent:
             try:
-                clean = buffer.replace('```json', '').replace('```', '').strip()
-                yield _sse_format('done', json.loads(clean))
+                clean = buffer.replace("```json", "").replace("```", "").strip()
+                yield _sse_format("done", json.loads(clean))
             except json.JSONDecodeError:
-                yield _sse_format('type', buffer)
+                yield _sse_format("type", buffer)
     except Exception as catchall_e:
         print("\n\n=== STREAM ERROR TRACEBACK ===")
         traceback.print_exc()
         print("==============================\n")
-        print(f'Stream error: {str(catchall_e)}')
-        yield _sse_format('error', str(catchall_e))
+        print(f"Stream error: {str(catchall_e)}")
+        yield _sse_format("error", str(catchall_e))
 
 
-@app.post('/stream/refine')
+@app.post("/stream/refine")
 async def stream_refine(request: RefineRequest):
     """Streaming refine using existing LangChain setup"""
-    payload = {'idea': request.idea, 'context': request.context}
+    payload = {"idea": request.idea, "context": request.context}
     return StreamingResponse(event_stream(refine_chain, payload))
 
 
-@app.post('/stream/breakdown')
+@app.post("/stream/breakdown")
 async def stream_breakdown(request: BreakdownRequest):
     """Stream breakdown with existing lang setup"""
-    return StreamingResponse(event_stream(breakdown_chain, {
-        'definition': request.definition, 'max_steps': request.max_steps
-    }))
+    return StreamingResponse(
+        event_stream(
+            breakdown_chain,
+            {"definition": request.definition, "max_steps": request.max_steps},
+        )
+    )
 
 
-@app.post('/stream/plan')
+@app.post("/stream/plan")
 async def stream_plan(request: PlanRequest):
     """Stream plan with existing lang setup"""
     steps_as_dicts = [s.model_dump() for s in request.steps]
 
-    return StreamingResponse(event_stream(plan_graph, {
-        'optionName': request.optionName,
-        'steps': steps_as_dicts,
-        'total_minutes': request.total_minutes,
-        'iteration': 0,
-        'draft_plan': None
-    }))
+    return StreamingResponse(
+        event_stream(
+            plan_graph,
+            {
+                "optionName": request.optionName,
+                "steps": steps_as_dicts,
+                "total_minutes": request.total_minutes,
+                "iteration": 0,
+                "draft_plan": None,
+            },
+        )
+    )
 
 
 @app.get("/health", response_model=Health)
 def health():
     return Health(
-        status="ok", model=settings.model_name or '',
-        ollama_url=HttpUrl(settings.ollama_base_url or '')
+        status="ok",
+        model=settings.model_name or "",
+        ollama_url=HttpUrl(settings.ollama_base_url or ""),
     )
 
 
@@ -148,13 +162,15 @@ def llm_ping():
         # as opposed to OK is the other option
         # then it only replies with WAFFLES qwen2.5
         r = ollama_client.generate(
-            model=settings.model_name or '',
+            model=settings.model_name or "",
             prompt="Flip a coin to pick 'WAFFLES' or 'OK' then reply"
-            " with it. Only respond with the outcome"
+            " with it. Only respond with the outcome",
         )
         return PingResponse(response=r["response"].strip())
     except Exception as general_exception:
-        raise HTTPException(status_code=502, detail=f"ollama error: {general_exception}")
+        raise HTTPException(
+            status_code=502, detail=f"ollama error: {general_exception}"
+        )
 
 
 @app.post("/refine", response_model=RefineResponse)
@@ -166,45 +182,108 @@ def refine(request: RefineRequest):
         out = refine_with_lang(request)
         return out
     except Exception as gen_exception:
-        raise HTTPException(502, detail=f'refine failed with\n{gen_exception}')
+        raise HTTPException(502, detail=f"refine failed with\n{gen_exception}")
 
 
-@app.post('/breakdown', response_model=BreakdownResponse)
+@app.post("/breakdown", response_model=BreakdownResponse)
 def breakdown(req: BreakdownRequest):
     try:
         out = breakdown_with_lc(req)
         for p in out.plans:
-            p.name = (p.name or '').strip() or 'Plan'
-            p.steps = [
-                s for s in p.steps if s.text.strip()][: min(
-                    len(p.steps), req.max_steps or 7)
+            p.name = (p.name or "").strip() or "Plan"
+            p.steps = [s for s in p.steps if s.text.strip()][
+                : min(len(p.steps), req.max_steps or 7)
             ]
             return out
     except Exception as general_exception:
         raise HTTPException(
-            status_code=502, detail=f'breakdown failed with\n{general_exception}'
+            status_code=502, detail=f"breakdown failed with\n{general_exception}"
         )
 
 
-@app.post('/plan', response_model=PlanResponse)
+@app.post("/plan", response_model=PlanResponse)
 async def plan(req: PlanRequest):
     try:
         out = await plan_with_lc(req)
         if out:
             out.parked_indices = [i + 1 for i, s in enumerate(out.steps) if s.parked]
             out.total_duration = sum(
-                s.duration_minutes for s in out.steps if not s.parked)
+                s.duration_minutes for s in out.steps if not s.parked
+            )
         return out
     except Exception as general_exception:
         raise HTTPException(
-            status_code=502, detail=f'plan failed with\n{general_exception}'
+            status_code=502, detail=f"plan failed with\n{general_exception}"
         )
+
+
+@app.post("/plans", response_model=int)
+async def save_plan(request: PlanSaveRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Saves a finalized plan to the database.
+    """
+    plan_data = request.plan_data
+    new_plan = IdeaBase(
+        option_name=plan_data.optionName,
+        total_duration=plan_data.total_duration,
+        full_plan_json=plan_data.model_dump_json(),
+    )
+
+    db.add(new_plan)
+    await db.commit()
+    await db.refresh(new_plan)
+
+    return new_plan.id
+
+
+@app.get("/plans", response_model=list[PlanSummary])
+async def list_plans(db: AsyncSession = Depends(get_db)):
+    """
+    Lists all saved plans, returning summary information.
+    """
+    result = await db.execute(
+        select(IdeaBase).where(IdeaBase.full_plan_json.isnot(None))
+    )
+    saved_plans = result.scalars().all()
+
+    return [
+        PlanSummary(
+            id=p.id,
+            option_name=p.option_name,
+            total_duration=p.total_duration,
+            created_at=p.created_at.isoformat(),
+            updated_at=p.updated_at.isoformat(),
+        )
+        for p in saved_plans
+    ]
+
+
+@app.get("/plans/{plan_id}", response_model=FullPlanResponse)
+async def get_plan(plan_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Retrieves a full saved plan by its ID.
+    """
+    result = await db.execute(select(IdeaBase).where(IdeaBase.id == plan_id))
+    saved_plan = result.scalar_one_or_none()
+
+    if not saved_plan or not saved_plan.full_plan_json:
+        raise HTTPException(status_code=404, detail="Plan not found")
+
+    full_plan_data = PlanResponse.model_validate_json(saved_plan.full_plan_json)
+
+    return FullPlanResponse(
+        id=saved_plan.id,
+        option_name=saved_plan.option_name,
+        total_duration=saved_plan.total_duration,
+        full_plan_data=full_plan_data,
+        created_at=saved_plan.created_at.isoformat(),
+        updated_at=saved_plan.updated_at.isoformat(),
+    )
 
 
 @app.post("/test-db")
 async def test_db_connection(
-    request: RefineRequest,
-    db: AsyncSession = Depends(get_db)
+    request: RefineRequest, db: AsyncSession = Depends(get_db)
 ):
     """
     Simple endpoint to verify DB writes and reads.
@@ -212,7 +291,7 @@ async def test_db_connection(
     new_idea = IdeaBase(
         initial=request.idea,
         refined=f"Processed: {request.idea}",
-        steps="[]"
+        # steps="[]" # This field was removed in backend/db.py
     )
 
     db.add(new_idea)
@@ -231,8 +310,8 @@ async def test_db_connection(
         "db_record": {
             "id": saved_idea.id,
             "initial": saved_idea.initial,
-            "created_at": saved_idea.created_at
-        }
+            "created_at": saved_idea.created_at,
+        },
     }
 
 
@@ -247,7 +326,7 @@ async def test_tool_binding(raw_minutes: int):
 
     if response.tool_calls:
         tool_call = response.tool_calls[0]  # Grab the first tool decision
-        tool_args = tool_call['args']       # e.g., {'minutes': 23}
+        tool_args = tool_call["args"]  # e.g., {'minutes': 23}
 
         # Invoke the python function using the args the LLM gave us
         result = normalize_duration.invoke(tool_args)
@@ -255,12 +334,9 @@ async def test_tool_binding(raw_minutes: int):
         return {
             "status": "success",
             "original_input": raw_minutes,
-            "tool_selected": tool_call['name'],
+            "tool_selected": tool_call["name"],
             "llm_generated_args": tool_args,
-            "final_result": result
+            "final_result": result,
         }
 
-    return {
-        "status": "missed_tool_call",
-        "llm_response": response.content
-    }
+    return {"status": "missed_tool_call", "llm_response": response.content}
