@@ -52,8 +52,9 @@ async def draft_node(state: PlanState):
     response = await structured_llm.ainvoke(messages)
 
     return {
-        "draft_plan": response, "iteration": state.get("iteration", 0) + 1,
-        "feedback": None
+        "draft_plan": response,
+        "iteration": state.get("iteration", 0) + 1,
+        "feedback": None,
     }
 
 
@@ -66,9 +67,11 @@ async def optimize_node(state: PlanState):
 
     # Math tool normalization calls
     batch_prompts = [
-        [HumanMessage(
-            content=f"Normalize a duration of {step.duration_minutes} minutes."
-        )]
+        [
+            HumanMessage(
+                content=f"Normalize a duration of {step.duration_minutes} minutes."
+            )
+        ]
         for step in current_plan.steps
     ]
 
@@ -89,11 +92,11 @@ async def optimize_node(state: PlanState):
     feedback = ""
 
     if limit is not None:
-        print(f'current steps after normalization: {current_plan.steps}')
+        print(f"current steps after normalization: {current_plan.steps}")
         active_minutes = sum(
             s.duration_minutes
             for s in current_plan.steps
-            if not getattr(s, 'parked', False)
+            if not getattr(s, "parked", False)
         )
         print(f"--- Duration Check: {active_minutes} active mins vs Limit {limit} ---")
 
@@ -117,7 +120,7 @@ def should_replan(state: PlanState) -> Literal["drafter", END]:
     if state["iteration"] > 3:
         print("Maximum iterations reached; ending planning.")
         return END
-    if state.get("feedback", ''):
+    if state.get("feedback", ""):
         print(f"Feedback present. {state['feedback'][:50]} re-drafting plan.")
         print(f"Current draft is: {state.get('draft_plan')}")
         return "drafter"
@@ -143,9 +146,12 @@ plan_graph = workflow.compile()
 
 async def plan_with_lc(req: PlanRequest) -> PlanResponse:
     """Helper to run the plan graph in a non-streaming way"""
+    # Convert Pydantic steps to dicts to match PlanState definition and avoid .get() errors
+    steps_as_dicts = [s.model_dump() for s in req.steps]
+
     initial_state = {
         "optionName": req.optionName,
-        "steps": req.steps,
+        "steps": steps_as_dicts,
         "total_minutes": req.total_minutes,
         "iteration": 0,
         "draft_plan": None,
