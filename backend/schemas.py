@@ -327,6 +327,8 @@ class PlanSaveRequest(BaseModel):
     """Request body for saving a plan."""
 
     plan_data: PlanResponse = Field(..., description="The complete plan data to save.")
+    initial_idea: Optional[str] = Field(None, description="The initial idea from the workbench.")
+    refined_idea: Optional[str] = Field(None, description="The refined idea from the workbench.")
 
 
 class PlanSummary(BaseModel):
@@ -335,6 +337,9 @@ class PlanSummary(BaseModel):
     id: int = Field(..., description="Unique identifier for the saved plan.")
     option_name: str = Field(
         ..., description="Name of the plan option (e.g., 'Lean Plan')."
+    )
+    initial_idea: Optional[str] = Field(
+        None, description="The initial idea that led to this plan."
     )
     total_duration: int = Field(
         ..., description="Total duration of the plan in minutes."
@@ -351,6 +356,12 @@ class FullPlanResponse(BaseModel):
     id: int = Field(..., description="Unique identifier for the saved plan.")
     option_name: str = Field(
         ..., description="Name of the plan option (e.g., 'Lean Plan')."
+    )
+    initial_idea: Optional[str] = Field(
+        None, description="The initial idea that led to this plan."
+    )
+    refined_idea: Optional[str] = Field(
+        None, description="The refined idea for this plan."
     )
     total_duration: int = Field(
         ..., description="Total duration of the plan in minutes."

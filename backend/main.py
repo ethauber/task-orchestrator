@@ -227,6 +227,8 @@ async def save_plan(request: PlanSaveRequest, db: AsyncSession = Depends(get_db)
         option_name=plan_data.optionName,
         total_duration=plan_data.total_duration,
         full_plan_json=plan_data.model_dump_json(),
+        initial=request.initial_idea,
+        refined=request.refined_idea,
     )
 
     db.add(new_plan)
@@ -250,6 +252,7 @@ async def list_plans(db: AsyncSession = Depends(get_db)):
         PlanSummary(
             id=p.id,
             option_name=p.option_name,
+            initial_idea=p.initial,
             total_duration=p.total_duration,
             created_at=p.created_at.isoformat(),
             updated_at=p.updated_at.isoformat(),
@@ -274,6 +277,8 @@ async def get_plan(plan_id: int, db: AsyncSession = Depends(get_db)):
     return FullPlanResponse(
         id=saved_plan.id,
         option_name=saved_plan.option_name,
+        initial_idea=saved_plan.initial,
+        refined_idea=saved_plan.refined,
         total_duration=saved_plan.total_duration,
         full_plan_data=full_plan_data,
         created_at=saved_plan.created_at.isoformat(),
