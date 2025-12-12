@@ -146,21 +146,19 @@ Built for local idea refinement and planning without relying on the cloud. Also,
 
 This project uses [Alembic](https://alembic.sqlalchemy.org/en/latest/) to manage database schema changes. This allows for evolving the database structure without losing existing data.
 
-**To generate a new migration (after making changes to `backend/db.py` models):**
+**Example workflow (adding fields):**
 
-```bash
-poetry run alembic revision --autogenerate -m "A descriptive message for your changes"
-```
+1. Modify your SQLAlchemy models in `backend/db.py`.
+2. Generate a migration script:
+   ```bash
+   poetry run alembic revision --autogenerate -m "Add initial and refined idea fields to saved plans"
+   ```
+3. Apply the migration to update your local database:
+   ```bash
+   poetry run alembic upgrade head
+   ```
 
-This will create a new migration script in the `alembic/versions` directory. Review the generated script to ensure it correctly captures your intended schema changes.
-
-**To apply pending migrations to your database:**
-
-```bash
-poetry run alembic upgrade head
-```
-
-This command will run all migrations that have not yet been applied to your `async0.db` file, updating its schema.
+**Frontend Note:** When updating backend schemas, remember to sync the corresponding TypeScript definitions in `frontend/src/lib/types.ts` to ensure types match across the stack.
 
 #### Collection of links
 ```
