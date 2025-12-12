@@ -23,8 +23,12 @@ export async function postJSON<T>(path: string, body: unknown): Promise<T> {
     return r.json();
 }
 
-export async function savePlan(planData: PlanResponse): Promise<number> {
-    const response = await postJSON<number>('/plans', { plan_data: planData });
+export async function savePlan(planData: PlanResponse, initialIdea?: string, refinedIdea?: string): Promise<number> {
+    const response = await postJSON<number>('/plans', { 
+        plan_data: planData,
+        initial_idea: initialIdea,
+        refined_idea: refinedIdea
+    });
     return response;
 }
 

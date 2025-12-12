@@ -124,7 +124,11 @@ export default function BreakdownPage() {
         if (!finalPlan) return;
         setSaveStatus('Saving...');
         try {
-            const savedId = await savePlan(finalPlan);
+            const savedId = await savePlan(
+                finalPlan,
+                idea, // Pass initial idea
+                refined?.refinedIdea // Pass refined idea
+            );
             setSaveStatus(`Plan saved with ID: ${savedId}`);
             fetchSavedPlans(); // Refresh the list of saved plans
         } catch (error: any) {
@@ -134,18 +138,32 @@ export default function BreakdownPage() {
 
     async function onLoadPlan(planId: number) {
         setLoadingPlanById(true);
-        setIdea(''); // Clear current state
+        // Clear all current state related to the current workflow
+        setIdea('');
         setRefined(null);
+        setAnswers([]);
         setPlans(null);
         setSelected(null);
+        setBudget('');
         setFinalPlan(null);
-        setAnswers([]);
         setSaveStatus('');
+        breakdownStream.setError('');
+        refineStream.setError('');
+        finalizeStream.setError('');
+
 
         try {
             const fullPlan = await getPlan(planId);
-            setFinalPlan(fullPlan.full_plan_data);
-            setIdea(''); // Optionally set idea/refinedIdea from loaded plan if desired
+            setFinalPlan(fullPlan.full_plan_data); // Set the final plan
+
+            // Repopulate initial and refined ideas
+            setIdea(fullPlan.initial_idea || '');
+            if (fullPlan.refined_idea) {
+                setRefined({ refinedIdea: fullPlan.refined_idea, questions: [] }); // Reconstruct RefineResponse minimal
+            }
+            // Note: Reconstructing 'plans' (breakdown options) is complex and might require
+            // rerunning breakdown or saving more state. For now, we only load finalPlan.
+
         } catch (error: any) {
             console.error("Failed to load plan:", error);
             // Optionally set an error state to display to the user
@@ -362,28 +380,28 @@ export default function BreakdownPage() {
                             {finalizeStream.streaming}
                         </div>
                     )}
-                    {finalPlan && (
-                        <section style={styles.section}>
-                            <h3 style={{ ...styles.h3 }}>Final Plan ({finalPlan.optionName})</h3>
-                            <p>Total duration: {finalPlan.total_duration} min</p>
-                            <ol>
-                                {finalPlan.steps.map((step: any, stepIndex: any) => (
-                                    <li key={stepIndex}>
-                                        {step.text} - {step.duration_minutes} min
-                                        {step.parked ? ' (parked)' : ''}
-                                        {step.depends_on?.length ? ` | deps ${step.depends_on.join(',')}` : ''}
-                                    </li>
-                                ))}
-                            </ol>
-                            <button onClick={onSavePlan} disabled={saveStatus === 'Saving...'} style={{ ...styles.button, ...(saveStatus === 'Saving...' ? styles.buttonDisabled : {}) }}>
-                                {saveStatus === 'Saving...' ? 'Saving...' : 'Save Plan'}
-                            </button>
-                            {saveStatus && <p style={{ marginTop: 8, fontSize: 14 }}>{saveStatus}</p>}
-                        </section>
-                    )}
                 </section>
             )}
 
+            {finalPlan && (
+                <section style={styles.section}>
+                    <h3 style={{ ...styles.h3 }}>Final Plan ({finalPlan.optionName})</h3>
+                    <p>Total duration: {finalPlan.total_duration} min</p>
+                    <ol>
+                        {finalPlan.steps.map((step: any, stepIndex: any) => (
+                            <li key={stepIndex}>
+                                {step.text} - {step.duration_minutes} min
+                                {step.parked ? ' (parked)' : ''}
+                                {step.depends_on?.length ? ` | deps ${step.depends_on.join(',')}` : ''}
+                            </li>
+                        ))}
+                    </ol>
+                    <button onClick={onSavePlan} disabled={saveStatus === 'Saving...'} style={{ ...styles.button, ...(saveStatus === 'Saving...' ? styles.buttonDisabled : {}) }}>
+                        {saveStatus === 'Saving...' ? 'Saving...' : 'Save Plan'}
+                    </button>
+                    {saveStatus && <p style={{ marginTop: 8, fontSize: 14 }}>{saveStatus}</p>}
+                </section>
+            )}
             <section style={styles.section}>
                 <h2 style={{ ...styles.h2 }}>Saved Plans</h2>
                 {loadingSavedPlans ? (
@@ -395,7 +413,10 @@ export default function BreakdownPage() {
                         {savedPlans.map((plan) => (
                             <li key={plan.id} style={{ marginBottom: 8, borderBottom: `1px solid ${colors.border}`, paddingBottom: 8 }}>
                                 <div>
-                                    <strong style={{ color: colors.textPrimary }}>{plan.option_name}</strong> (ID: {plan.id})
+                                    <strong style={{ color: colors.textPrimary }}>
+                                        {plan.option_name}
+                                        {plan.initial_idea && ` - ${plan.initial_idea.substring(0, 50)}${plan.initial_idea.length > 50 ? '...' : ''}`}
+                                    </strong> (ID: {plan.id})
                                     <span style={{ fontSize: 12, color: colors.textSecondary, marginLeft: 8 }}>
                                         {new Date(plan.created_at).toLocaleString()}
                                     </span>

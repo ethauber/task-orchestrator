@@ -16,3 +16,29 @@ export type PlanResponse = {
     optionName: string; steps: FinalStep[]; total_duration: number;
     parked_indices: number[]
 };
+
+export type PlanSaveRequest = {
+    plan_data: PlanResponse;
+    initial_idea?: string;
+    refined_idea?: string;
+};
+
+export type PlanSummary = {
+    id: number;
+    option_name: string;
+    initial_idea?: string;
+    total_duration: number;
+    created_at: string;
+    updated_at: string;
+};
+
+export type FullPlanResponse = {
+    id: number;
+    option_name: string;
+    initial_idea?: string;
+    refined_idea?: string;
+    total_duration: number;
+    full_plan_data: PlanResponse;
+    created_at: string;
+    updated_at: string;
+};
