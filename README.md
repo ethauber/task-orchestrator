@@ -7,28 +7,28 @@ Task-Orchestrator is a local-first app that turns vague ideas into clear, action
 
 ## Features
 
-- **Local Execution**: Runs LLM ops fully offline using [Ollama](https://ollama.com). Currently model is defaulted to Qwen2.5.  
-- **Refinement Flow**: `/refine`, `/breakdown`, and `/plan` endpoints guide ideas from vague to actionable.  
-- **Monorepo Setup**: Unified schema between FastAPI and Next.js using shared types.  
-- **Optional Persistence**: Save and load plans locally via SQLite.  
+- **Local Execution**: Runs LLM ops fully offline using [Ollama](https://ollama.com). Currently model is defaulted to Qwen2.5.
+- **Refinement Flow**: `/refine`, `/breakdown`, and `/plan` endpoints guide ideas from vague to actionable.
+- **Monorepo Setup**: Unified schema between FastAPI and Next.js using shared types.
+- **Optional Persistence**: Save and load plans locally via SQLite.
 
 ## Tech Stack
 
-- **Backend**: Python, FastAPI, LangChain, Ollama  
-- **Frontend**: React, Next.js, TypeScript  
-- **Database** (optional): SQLite  
+- **Backend**: Python, FastAPI, LangChain, Ollama
+- **Frontend**: React, Next.js, TypeScript
+- **Database** (optional): SQLite
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.10+ (3.11.13)  
-- Poetry for dependency management (2.2.1)  
-- Node.js 18+ (v22.20.0)  
-- npm (10.9.3)  
-- npx (10.9.3)  
-- [Ollama](https://ollama.com) installed locally (0.12.5)  
-- Server Started in one terminal and Model pulled in another (for example):  
+- Python 3.10+ (3.11.13)
+- Poetry for dependency management (2.2.1)
+- Node.js 18+ (v22.20.0)
+- npm (10.9.3)
+- npx (10.9.3)
+- [Ollama](https://ollama.com) installed locally (0.12.5)
+- Server Started in one terminal and Model pulled in another (for example):
   ```zsh
   ollama serve
   ```
@@ -37,7 +37,7 @@ Task-Orchestrator is a local-first app that turns vague ideas into clear, action
   ```
 
 ### Setup
-#### Pre-requistites (MacOS example) 
+#### Pre-requistites (MacOS example)
 ```bash
 # Install Homebrew
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -91,9 +91,9 @@ Then open [http://localhost:3000](http://localhost:3000) to use the app.
 
 ## Example Flow
 
-1. Enter: *"Plan my path"*  
-2. `/refine` → returns refined idea and clarifying questions  
-3. `/breakdown` → returns actionable task list  
+1. Enter: *"Plan my path"*
+2. `/refine` → returns refined idea and clarifying questions
+3. `/breakdown` → returns actionable task list
 4. `/plan` → returns ordered execution plan
 
 ## MCP Server
@@ -141,6 +141,26 @@ poetry run python mcp_entry.py
 
 Built for local idea refinement and planning without relying on the cloud. Also, most clouds do not do this readily currently
 
+
+## Database Migrations
+
+This project uses [Alembic](https://alembic.sqlalchemy.org/en/latest/) to manage database schema changes. This allows for evolving the database structure without losing existing data.
+
+**To generate a new migration (after making changes to `backend/db.py` models):**
+
+```bash
+poetry run alembic revision --autogenerate -m "A descriptive message for your changes"
+```
+
+This will create a new migration script in the `alembic/versions` directory. Review the generated script to ensure it correctly captures your intended schema changes.
+
+**To apply pending migrations to your database:**
+
+```bash
+poetry run alembic upgrade head
+```
+
+This command will run all migrations that have not yet been applied to your `async0.db` file, updating its schema.
 
 #### Collection of links
 ```
