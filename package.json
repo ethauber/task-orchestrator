@@ -8,6 +8,8 @@
     "llm": "ollama serve",
     "backend": "poetry run uvicorn backend.main:app --reload --port 8000",
     "frontend": "npm --prefix frontend run dev",
+    "kill-ports": "kill-port 11434 8000 3000",
+    "predev": "npm run kill-ports",
     "dev": "concurrently -k -n LLM,API,WEB -c blue,green,magenta \"npm run llm\" \"npm run backend\" \"npm run frontend\""
   },
   "repository": {
@@ -22,6 +24,7 @@
   },
   "homepage": "https://github.com/ethauber/task-orchestrator#readme",
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "kill-port": "^2.0.1"
   }
 }
