@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# Pre-commit hook to run linting and autofix
+
+# Backend: Python linting and formatting
+echo "Running Python linting and formatting..."
+poetry run ruff check --fix .
+poetry run ruff format .
+
+# Frontend: ESLint autofix
+echo "Running frontend linting..."
+cd frontend && npm run lint -- --fix
+cd ..
