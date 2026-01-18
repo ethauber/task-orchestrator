@@ -56,6 +56,8 @@ jobs:
       run: poetry install --no-interaction
 
     - name: Run tests
-      run: poetry run pytest
-      env:
-        PYTHONPATH:  ${{ github.workspace }}/backend
+      run: PYTHONPATH=${{ github.workspace }} pytest
+        --cov=backend
+        --cov-report=xml
+        --cov-report=term-missing
+        tests/
