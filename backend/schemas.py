@@ -12,9 +12,9 @@ class Health(BaseModel):
         description="Primary model identifier the service is using",
         examples=["qwen2.5"],
     )
-    ollama_url: HttpUrl = Field(
-        ...,
-        description="Base URL for the Ollama endpoint",
+    ollama_url: Optional[HttpUrl] = Field(
+        default=None,
+        description="Base URL for the Ollama endpoint (optional)",
         examples=["http://localhost:11434"],
     )
 
@@ -382,3 +382,12 @@ class ErrorResponse(BaseModel):
     details: Optional[str] = Field(
         None, description="Optional additional error details."
     )
+
+
+class StepExecutionRequest(BaseModel):
+    """
+    Request to execute a specific step using available tools.
+    """
+    step_text: str = Field(..., description="The specific action to take (e.g., 'Research the weather in Kyoto').")
+    plan_context: str = Field(..., description="Context about the broader plan this step belongs to.")
+    prev_step_result: Optional[str] = Field(None, description="Result from a previous step if chained.")

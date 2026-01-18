@@ -8,9 +8,9 @@ from typing import AsyncGenerator
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from pydantic import HttpUrl
 
 # local
 from backend import ollama_client, settings
@@ -148,7 +148,8 @@ def health():
     return Health(
         status="ok",
         model=settings.model_name or "",
-        ollama_url=HttpUrl(settings.ollama_base_url or ""),
+        ollama_url=HttpUrl(settings.ollama_base_url)
+        if settings.ollama_base_url else None,
     )
 
 
