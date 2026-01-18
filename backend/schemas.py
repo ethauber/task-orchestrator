@@ -327,8 +327,12 @@ class PlanSaveRequest(BaseModel):
     """Request body for saving a plan."""
 
     plan_data: PlanResponse = Field(..., description="The complete plan data to save.")
-    initial_idea: Optional[str] = Field(None, description="The initial idea from the workbench.")
-    refined_idea: Optional[str] = Field(None, description="The refined idea from the workbench.")
+    initial_idea: Optional[str] = Field(
+        None, description="The initial idea from the workbench."
+    )
+    refined_idea: Optional[str] = Field(
+        None, description="The refined idea from the workbench."
+    )
 
 
 class PlanSummary(BaseModel):
@@ -388,6 +392,14 @@ class StepExecutionRequest(BaseModel):
     """
     Request to execute a specific step using available tools.
     """
-    step_text: str = Field(..., description="The specific action to take (e.g., 'Research the weather in Kyoto').")
-    plan_context: str = Field(..., description="Context about the broader plan this step belongs to.")
-    prev_step_result: Optional[str] = Field(None, description="Result from a previous step if chained.")
+
+    step_text: str = Field(
+        ...,
+        description="The specific action to take (e.g., 'Research the weather in Kyoto').",
+    )
+    plan_context: str = Field(
+        ..., description="Context about the broader plan this step belongs to."
+    )
+    prev_step_result: Optional[str] = Field(
+        None, description="Result from a previous step if chained."
+    )

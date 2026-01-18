@@ -25,7 +25,7 @@ prompts_ = load_prompts("plan.json")
 async def draft_node(state: PlanState):
     """Draft a plan based on the current state"""
     steps_text = "\n".join(
-        f'{i+1}. {s.get("text", "")}' for i, s in enumerate(state["steps"])
+        f"{i + 1}. {s.get('text', '')}" for i, s in enumerate(state["steps"])
     )
 
     base_prompt = prompts_["human"].format(

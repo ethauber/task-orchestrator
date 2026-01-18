@@ -149,7 +149,8 @@ def health():
         status="ok",
         model=settings.model_name or "",
         ollama_url=HttpUrl(settings.ollama_base_url)
-        if settings.ollama_base_url else None,
+        if settings.ollama_base_url
+        else None,
     )
 
 

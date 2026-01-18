@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = 'Task Orchestrator'
+    app_name: str = "Task Orchestrator"
     ollama_base_url: Optional[str] = None
     model_name: Optional[str] = None
     temperature: float = 0.114942  # Kepler-Bouwkamp
@@ -17,6 +17,4 @@ class Settings(BaseSettings):
     debug: bool = False
     database_url: Optional[str] = None
 
-    model_config = SettingsConfigDict(
-        env_file='backend/.env'
-    )
+    model_config = SettingsConfigDict(env_file="backend/.env")
