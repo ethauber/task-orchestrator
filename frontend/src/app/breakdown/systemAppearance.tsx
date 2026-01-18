@@ -1,29 +1,28 @@
 import { useState, useEffect } from 'react';
 
+function getInitialPreference(): boolean {
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  return false;
+}
 
 function useSystemDarkMode() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(getInitialPreference);
 
   useEffect(() => {
-    // Check if window.matchMedia is available (browser environment)
-    if (window.matchMedia) {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
 
-      // Set initial state
-      setIsDarkMode(mediaQuery.matches);
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsDarkMode(event.matches);
+    };
 
-      // Listen for changes
-      const handleChange = (e: any) => {
-        setIsDarkMode(e.matches);
-      };
-      mediaQuery.addEventListener('change', handleChange);
-
-      // Clean up the event listener on unmount
-      return () => {
-        mediaQuery.removeEventListener('change', handleChange);
-      };
-    }
-  }, []); // Empty dependency array ensures this runs only once on mount
+    mediaQuery.addEventListener('change', handleChange);
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
+  }, []);
 
   return isDarkMode;
 }
