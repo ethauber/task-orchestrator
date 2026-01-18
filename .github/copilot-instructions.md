@@ -5,7 +5,7 @@
 Task-Orchestrator is a local-first application that turns vague ideas into clear, actionable plans. It combines a FastAPI backend with a Next.js frontend to refine goals, break them into tasks, and generate step-by-step strategies entirely on the user's machine.
 
 **Tech Stack:**
-- **Backend**: Python 3.10+ (3.11.13), FastAPI, LangChain, Ollama, SQLAlchemy
+- **Backend**: Python 3.10+ (tested with 3.11.13), FastAPI, LangChain, Ollama, SQLAlchemy
 - **Frontend**: React, Next.js, TypeScript
 - **Database**: SQLite (optional persistence)
 - **Package Management**: Poetry (backend), npm (frontend)
@@ -13,9 +13,9 @@ Task-Orchestrator is a local-first application that turns vague ideas into clear
 
 ## Prerequisites
 
-- Python 3.10+ (3.11.13)
+- Python 3.10+ (tested with 3.11.13)
 - Poetry 2.2.1+
-- Node.js 18+ (v22.20.0)
+- Node.js 18+ (tested with v22.20.0)
 - npm 10.9.3+
 - Ollama 0.12.5+ (with `ollama serve` running and model pulled)
 
