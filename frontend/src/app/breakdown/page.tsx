@@ -5,8 +5,7 @@ import type {
     RefineResponse,
     BreakdownResponse,
     PlanResponse,
-    PlanSummary,
-    FullPlanResponse
+    PlanSummary
 } from '@/lib/types';
 import { useStreamingAction, listPlans, savePlan, getPlan } from '@/lib/api';
 
@@ -31,8 +30,6 @@ export default function BreakdownPage() {
     const [selected, setSelected] = useState<number | null>(null);
     const [budget, setBudget] = useState<number | ''>('');
     const [finalPlan, setFinalPlan] = useState<PlanResponse | null>(null);
-    const [finalLoading, setFinalLoading] = useState(false);
-    const [finalErr, setFinalErr] = useState<string>("");
     const finalizeStream = useStreamingAction()
 
     // Plan Persistence
@@ -53,7 +50,7 @@ export default function BreakdownPage() {
         try {
             const plans = await listPlans();
             setSavedPlans(plans);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to fetch saved plans:", error);
             // Optionally set an error state to display to the user
         } finally {
@@ -131,8 +128,9 @@ export default function BreakdownPage() {
             );
             setSaveStatus(`Plan saved with ID: ${savedId}`);
             fetchSavedPlans(); // Refresh the list of saved plans
-        } catch (error: any) {
-            setSaveStatus(`Failed to save plan: ${error.message}`);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            setSaveStatus(`Failed to save plan: ${message}`);
         }
     }
 
@@ -164,7 +162,7 @@ export default function BreakdownPage() {
             // Note: Reconstructing 'plans' (breakdown options) is complex and might require
             // rerunning breakdown or saving more state. For now, we only load finalPlan.
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to load plan:", error);
             // Optionally set an error state to display to the user
         } finally {
@@ -344,8 +342,8 @@ export default function BreakdownPage() {
                                 />
                                 <strong style={{ marginLeft: 8 }}>{plan.name}</strong>
                             </label>
-                            <ol>{plan.steps.map((step: any, stepIndex: number) => (
-                                <li key={stepIndex}>{typeof step === 'string' ? step : step.text}</li>
+                            <ol>{plan.steps.map((step, stepIndex) => (
+                                <li key={stepIndex}>{step.text}</li>
                             ))}</ol>
                         </div>
                     ))}
@@ -370,8 +368,6 @@ export default function BreakdownPage() {
                             {finalizeStream.loading ? 'Finalizing...' : 'Finalize Plan'}
                         </button>
                     </div>
-                    {finalErr && <p style={{ ...styles.error }}>{finalErr}</p>}
-
                     {(finalizeStream.loading || finalizeStream.streaming) && (
                         <div style={styles.thinking}>
                             <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 8, opacity: 0.7 }}>
@@ -388,7 +384,7 @@ export default function BreakdownPage() {
                     <h3 style={{ ...styles.h3 }}>Final Plan ({finalPlan.optionName})</h3>
                     <p>Total duration: {finalPlan.total_duration} min</p>
                     <ol>
-                        {finalPlan.steps.map((step: any, stepIndex: any) => (
+                        {finalPlan.steps.map((step, stepIndex) => (
                             <li key={stepIndex}>
                                 {step.text} - {step.duration_minutes} min
                                 {step.parked ? ' (parked)' : ''}

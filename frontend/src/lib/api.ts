@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { PlanSaveRequest, PlanSummary, FullPlanResponse, PlanResponse } from './types';
+import { PlanSummary, FullPlanResponse, PlanResponse } from './types';
 
 export const API =
     (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '');
@@ -24,7 +24,7 @@ export async function postJSON<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function savePlan(planData: PlanResponse, initialIdea?: string, refinedIdea?: string): Promise<number> {
-    const response = await postJSON<number>('/plans', { 
+    const response = await postJSON<number>('/plans', {
         plan_data: planData,
         initial_idea: initialIdea,
         refined_idea: refinedIdea
@@ -43,9 +43,14 @@ export async function getPlan(planId: number): Promise<FullPlanResponse> {
 }
 
 
+type StreamMessage<T> =
+    | { type: 'thinking'; data: string }
+    | { type: 'done'; data: T }
+    | { type: 'error'; data: string };
+
 export async function streamPost<T>(
     path: string,
-    body: any,
+    body: unknown,
     onContent: (text: string) => void
 ): Promise<T> {
     const res = await fetch(`${API}${path}`, {
@@ -69,15 +74,15 @@ export async function streamPost<T>(
         buffer = lines.pop() || '';
 
         for (const line of lines) {
-            if (line.startsWith('data: ')) {
-                const data = JSON.parse(line.slice(6));
-                if (data.type === 'thinking') {
-                    onContent(data.data);
-                } else if (data.type === 'done') {
-                    finalData = data.data;
-                } else if (data.type === 'error') {
-                    throw new Error(data.data);
-                }
+            if (!line.startsWith('data: ')) continue;
+
+            const parsed = JSON.parse(line.slice(6)) as StreamMessage<T>;
+            if (parsed.type === 'thinking') {
+                onContent(parsed.data);
+            } else if (parsed.type === 'done') {
+                finalData = parsed.data;
+            } else if (parsed.type === 'error') {
+                throw new Error(parsed.data);
             }
         }
     }
@@ -92,7 +97,7 @@ export function useStreamingAction() {
     const [error, setError] = useState("");
 
     const run = useCallback(
-        async <T,>(path: string, body: any): Promise<T | null> => {
+        async <T,>(path: string, body: unknown): Promise<T | null> => {
             setError("");
             setStreaming("");
             setLoading(true);
@@ -103,8 +108,8 @@ export function useStreamingAction() {
                     (text) => setStreaming((prev) => prev + text)
                 );
                 return result;
-            } catch (err: any) {
-                setError(String(err));
+            } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : String(err));
                 return null;
             } finally {
                 setLoading(false);

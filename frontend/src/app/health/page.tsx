@@ -18,8 +18,8 @@ export default function HealthPage() {
                 setHealth(h);
                 const p = await getJSON<Ping>('/llm/ping');
                 setPing(p);
-            } catch (e: any) {
-                setErr(String(e));
+            } catch (e: unknown) {
+                setErr(e instanceof Error ? e.message : String(e));
             }
         })();
     }, []);
